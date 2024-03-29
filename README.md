@@ -32,7 +32,9 @@ The puzzle of parallelization is in figuring out how best to divide up larger ta
 
  Whether data in memory is shared or not in parallelized code can make a significant difference for both performance and accuracy. Multithreaded application can often use much less total memory because only a single copy of data is stored, but it also means the execution of the threads may be dependent upon each other. For example, if one thread sets the value of a variable to 5, while another thread sets the value to 10, then the final value depends on which thread executed last. For these reasons it is important to understand how the code you are running or writing utilizes processes, threads, and shared memory.
 
- __Storage__ encompasses any long-term storage device which, unlike RAM, persist when the computer is turned off. The term "disk" is sometimes used as a generic term for any storage device, such as in the synonymous phrases "save to (the) disk" or "write to (the) disk". Understanding the limitations of your storage devices is not only essential for preventing loss of data but is also important for making efficient use of your other computational resources.
+ ### Storage
+ 
+__Storage__ encompasses any long-term storage device which, unlike RAM, persist when the computer is turned off. The term "disk" is sometimes used as a generic term for any storage device, such as in the synonymous phrases "save to (the) disk" or "write to (the) disk". Understanding the limitations of your storage devices is not only essential for preventing loss of data but is also important for making efficient use of your other computational resources.
 
  A __Hard Disk Drive (HDD)__, also known as a "Hard Drive (HD)" or just "disk", is a storage device that utilizes spinning magnetic disks. HDDs are still the most common storage device you are likely to encounter due to their relatively low cost, decent performance, and long lifespans of 5-7 years for enterprise-grade HDDs.
 
