@@ -4,6 +4,8 @@
 
 We will start by discussing the primary components of a computer, which while familiar to most are seldom defined. Differentiating between these sometimes closely related terms can be valuable for proper usage and optimization of intensive programs. To illustrate these concepts, I will use the extended metaphor of a computer as a research institute.
 
+### Compute Power
+
 __CPU__
 The Central Processing Unit, or processor, executes the code, performing math and logic operations. Most of the time, when people refer to a CPU or processor, they are refering to an individual chip within the computer. Most computers have a single processor, but some high end computers have multiple.
 
@@ -20,7 +22,7 @@ __Multithreading__ is the ability of a computer to switch between multiple threa
 
 __Hyperthreading (TM)__ (known generically as __simultaneous multithreading__) is the ability of a core to attempt to handle multiple threads of execution simultaneously. A core with this capability will appear as two (or more, rarely) independent cores to the operating system, but in actuality each hardware core can still only execute one thread at a time. A CPU core with Hyperthreading (TM) can increase efficiency by taking multitasking to a level not humanly possible, such as by noticing that pipetting only takes one hand when not opening tubes, so picking up a pen and labeling their tubes while waiting for their pipette to aspirate.
 
-The efficiency gain of both multithreading and Hyperthreading (TM) depends on the nature of the computation being performed, and in some cases can lead to a decrease in efficiency (a multithreading approach to washing your hands would not be helpful, for example).
+You needn't concern yourself with the details of Hyperthreading (TM), except to know that the majority of Intel processors employ it to double the number of physical cores into "hardware threads" which, again, are indistinguishable from independent physical cores to the operating system. For example, the Intel Xeon Gold 6330 processor has 28 cores, but because of hyperthreading will appear as a 56-core processor when you run commands like `lscpu`. Under ideal circumstances the speedup from parallelizing across more cores is linear (i.e. doubling the number of cores reduces the run time by half), but the speedup from Hyperthreading (TM) is usually around 25%. So, if a job takes 28 hours to run with a single thread on an Intel Xeon Gold 6330 processor, then after parallelizing across 28 threads it may take only a single hour to run. Further increasing the parallelization to 56 threads most likely won't decrease the run time to 30 minutes, however, but instead may result in an approximately 48 minute run time. The efficiency gain of Hyperthreading (TM) depends on the nature of the computation being performed, however, and in some rare cases it can even lead to a decrease in efficiency. 
 
 A __Process__ is an instance of a computer program. A process is to a program as a particular experiment is to a protocol. A lab may run be running multiple experiments with the same or differnent protocols at one time, just as a computer typically runs many processes of many programs. Processes can have a single or multiple threads of execution, so can be executed across one or more cores. This is akin to a very invovled protocol, such as a test with a particle accelerator, that utilizes multiple researchers simultaneously to execute.
 
@@ -31,6 +33,14 @@ A __Process__ is an instance of a computer program. A process is to a program as
  Unlike in the methaphorical lab, where a given piece of equipment or bench setup may be used for multiple experiments, data in memory can *not* be shared by different processes. This is one of the key practical differences between threads and processes: Threads may share data in memory but processes do not.
 
  Whether data in memory is shared or not in parallelized code can make a significant difference for both performance and accuracy. Multithreaded applications can often use much less total memory because only a single copy of data is stored, but it also means threads can interfere with each other. If your lab-mate comes over and starts re-labelling the samples that you are working on, for example, it could lead to problems. Similarly, threads that try to work on the same data at the same time can lead to unexpected results. For these reasons it is important to understand how the code you are running or writing utilizes processes, threads, and shared memory.
+
+#### General Guidance on Parallelization
+
+Most of the time, optimum efficiency will be achieved when:  
+
+\# of Processes * # of Threads per Process = # of Cores available
+
+If you run out of memory, try reducing the number of processes. You may then be able to increase the number of threads per process without increasing your memory footprint.
 
  ### Storage
  
