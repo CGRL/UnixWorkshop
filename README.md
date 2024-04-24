@@ -1,4 +1,4 @@
-# UnixWorkshop
+# UNIXWorkshop
 
 ## Computer Hardware
 
@@ -54,7 +54,7 @@ __Storage__ encompasses any long-term storage device which, unlike RAM, persist 
 
 A __File System (FS)__ is a logical system for organizing data on one or more storage devices. An operating system may divide a single hard drive into multiple file systems, termed "__partitions__", or it may spread a file system across multiple hard drives. From the user's perspective, it only matters which partition you are using, but the performance of that partition depends on both the type of file system and the hardware it is running on.
 
-Unix systems are typically divided into multiple partitions, such as `/` (or root), `/home`, `/boot`, `/scratch`, and a `swap` partition. The `df` command lists the file systems, the space available on them, and the directories they are mounted to (more on this later).
+UNIX systems are typically divided into multiple partitions, such as `/` (or root), `/home`, `/boot`, `/scratch`, and a `swap` partition. The `df` command lists the file systems, the space available on them, and the directories they are mounted to (more on this later).
 
  __Input/Output (IO)__ is the process of writing data to (input) or reading data from (output) a file system. Many common operations in genomics and bioinformatics require relatively simple computation on a very large amount of data, and thus are more often limited by IO rather than CPU or pemory performance. For example, read trimming involves reading a large number of sequencing reads from storage, checking the quality scores, then writing most of the data right back out. Read trimming is an example of a task that is often "IO bound", meaning the time it takes to perform is dependent on IO speed rather than processor speed or the amount of memory available.
 
@@ -70,5 +70,39 @@ Unix systems are typically divided into multiple partitions, such as `/` (or roo
 Different organizational schemes balance these advantages against each other, and the different schemes are termed "levels", and the different levels are named "RAID 0", "RAID 1", "RAID 2", etc. Some RAID configurations employ multiple nested levels, and are named "RAID 1+0" or merely "RAID 10" and so forth.
 
 __Distributed File Systems__ add another layer of abstraction by networking multple file systems together, and thus may consist of a nearly arbitrary number of RAID systems. This can provide another level of parallelization, leading to very fast IO speeds. Lustre is the most common type of high performance distributed file system, used on the majority of supercomputers, including Berkeley's HPC system, Savio.
+
+# The Shell
+
+A __shell__ is the othermost layer of an operating system which displays information to the user and takes input from the users. The Graphical User Interfaces most of us interact with every day are one form of shell, but the term is most often used synonymously with the "command line" or "terminal" to mean a command-line interpreter (CLI).
+
+> "Although most users think of the shell as an interactive command interpreter, it is really a programming language in which each statement runs a command. Because it must satisfy both the interactive and programming aspects of command execution, it is a strange language, shaped as much by history as by design."
+ - Brian W. Kernighan & Rob Pike (The UNIX Programming Environment)
+
+This tutorial will cover the functionality of the most common UNIX shell you will encounter: __Bash (Bourne Again SHell)__, the successor to the __Bourne Shell (sh)__ which you might occasionally encounter. Most UNIX systems will have both `bash` and `sh` installed, and many other CLIs can be installed alongside which have different syntax and functionality, such as:  
+ - __C Shell__ `csh` and __TENEX C Shell__ `tcsh` are designed to look more like the language, C. `tcsh` additionally provides command completion functionality.
+ - __KornShell__ `ksh` attempts to combine the best aspects of `sh` and `csh`.
+ - __Z Shell__ `zsh` implements quality-of-life features like spellcheck and synced command history.
+
+## The Command Prompt
+
+The __command prompt__ is the sequence of characters that a shell outputs to let you know it's waiting for input. (Confusingly, Command Prompt is also the name of the Windows CLI with the well-known executable `Cmd.exe`.) In `bash` the default symbol for the end of the command prompt for regular users is `$`, but if you switch to the __root__ (i.e. admin) user this will change to `#` to warn you that the guard rails are off.
+
+## Tab Completion
+
+__The single most important and simplest piece of advice I have for UNIX novices is to _always_ use tab completion.__
+
+If you don't already know, tab completion is a feature of most CLIs, including `bash`, where the shell attempts to guess and fill in the rest of a partially typed command. `bash` will even fill in part of a command, up to the point where the command becomes ambiguous again. For example, when typing the name of a directory, typing `g` then `tab` may expand to `gen`. Continuing with `o` then `tab` would complete the name to `genomes/` while continuing with `e` then `tab` would complete to `genes/`. Pressing `tab` again will list all possible terms that could complete the command, so `g`, `tab`, `tab` could display `genes/` and `genomes/`.
+
+While file and directory names are by far the most common use cases for tab completion, and save you the most keystrokes, tab completion also works for commands, command options, and variable names.
+
+Here are some reaons why you should _always_ use tab completion:
+ - __It reduces keystrokes__, saving time and your Carpal Tunnel nerves.
+ - __It functions as spellcheck__. Typing `Dro` then `tab` not only saves you typing the rest of `Drosophila_melanogaster.fasta`, but if tab completion fails then that is an indication that you made a mistake. Perhaps you forgot to capitalize the "D", and so have `dro` which doesn't complete to anything.
+ - __It proofreads your command__. Tab completion failure cathes common errors besides spelling. For example, perhaps you _thought_ you were in `genomes` but were actually in `genes`, so the fly genome isn't found. Perhaps the fly genome actually consists of one file per chromosome within a directory, so typing `Dro`, `tab` yields `Drosophila_melanogaster/`. Notice the `/` at the end there? That is tab completion telling you that you just typed the name of a directory. If it were a file it would add a ` ` to the end, unless there is another filename that could be formed by adding additional characters (For example, `chr1.fa` would not tab complete to `chr1.fa ` if you also have a file named `chr1.fasta`.) Even if you end up typing the last part of a file name manually, the addition of the ` ` at the end lets you know that you didn't make any typos previously, such as by forgetting a space between the names of two input files. For example, `cat chr1.fachr2.fa` would not tab complete the final space, but `cat chr1.fa chr2.fa` would tab complete to `cat chr1.fa chr2.fa `.
+ - __It helps you navigate directory trees__. Expecially at first, navigating and finding files on the command line feels much more cumbersome than with a graphical file browser. Tab completion can alleviate this by allowing you to quickly list the contents of a directory when exploring. For example, with `ls genomes/` on the command prompt pressing `tab` might list `Drosophila_melanogaster`, `Mus_musculus`, and `Homo_sapiens`. Continuing with `ls genomes/M`, `tab`, `tab`, `tab` might complete to `ls genomes/Mus_musculus/` and list `revision5`, and `revision6`, and so on and so forth.
+
+## Command history
+
+`bash` stores the last commands you entered for reuse, with or without modification. Use the up and down arrows on your keyboard to cycle through the last commands you have run. This is especially handy when troubleshooting or testing out the options of a very long command, as well as when running the same command with slightly different inputs. You can also output a list of all your previous commands with `history`, or search and `r`ecall a previous command with `Ctrl + r`.
 
 
