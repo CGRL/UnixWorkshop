@@ -71,23 +71,24 @@ Different organizational schemes balance these advantages against each other, an
 
 __Distributed File Systems__ add another layer of abstraction by networking multple file systems together, and thus may consist of a nearly arbitrary number of RAID systems. This can provide another level of parallelization, leading to very fast IO speeds. Lustre is the most common type of high performance distributed file system, used on the majority of supercomputers, including Berkeley's HPC system, Savio.
 
-# The Shell
+## The Shell
 
 A __shell__ is the othermost layer of an operating system which displays information to the user and takes input from the users. The Graphical User Interfaces most of us interact with every day are one form of shell, but the term is most often used synonymously with the "command line" or "terminal" to mean a command-line interpreter (CLI).
 
 > "Although most users think of the shell as an interactive command interpreter, it is really a programming language in which each statement runs a command. Because it must satisfy both the interactive and programming aspects of command execution, it is a strange language, shaped as much by history as by design."
- - Brian W. Kernighan & Rob Pike (The UNIX Programming Environment)
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Brian W. Kernighan & Rob Pike (The UNIX Programming Environment)  
 
 This tutorial will cover the functionality of the most common UNIX shell you will encounter: __Bash (Bourne Again SHell)__, the successor to the __Bourne Shell (sh)__ which you might occasionally encounter. Most UNIX systems will have both `bash` and `sh` installed, and many other CLIs can be installed alongside which have different syntax and functionality, such as:  
  - __C Shell__ `csh` and __TENEX C Shell__ `tcsh` are designed to look more like the language, C. `tcsh` additionally provides command completion functionality.
  - __KornShell__ `ksh` attempts to combine the best aspects of `sh` and `csh`.
  - __Z Shell__ `zsh` implements quality-of-life features like spellcheck and synced command history.
 
-## The Command Prompt
+### The Command Prompt
 
 The __command prompt__ is the sequence of characters that a shell outputs to let you know it's waiting for input. (Confusingly, Command Prompt is also the name of the Windows CLI with the well-known executable `Cmd.exe`.) In `bash` the default symbol for the end of the command prompt for regular users is `$`, but if you switch to the __root__ (i.e. admin) user this will change to `#` to warn you that the guard rails are off.
 
-## Tab Completion
+### Tab Completion
 
 __The single most important and simplest piece of advice I have for UNIX novices is to _always_ use tab completion.__
 
@@ -101,7 +102,7 @@ Here are some reaons why you should _always_ use tab completion:
  - __It proofreads your command__. Tab completion failure cathes common errors besides spelling. For example, perhaps you _thought_ you were in `genomes` but were actually in `genes`, so the fly genome isn't found. Perhaps the fly genome actually consists of one file per chromosome within a directory, so typing `Dro`, `tab` yields `Drosophila_melanogaster/`. Notice the `/` at the end there? That is tab completion telling you that you just typed the name of a directory. If it were a file it would add a ` ` to the end, unless there is another filename that could be formed by adding additional characters (For example, `chr1.fa` would not tab complete to `chr1.fa ` if you also have a file named `chr1.fasta`.) Even if you end up typing the last part of a file name manually, the addition of the ` ` at the end lets you know that you didn't make any typos previously, such as by forgetting a space between the names of two input files. For example, `cat chr1.fachr2.fa` would not tab complete the final space, but `cat chr1.fa chr2.fa` would tab complete to `cat chr1.fa chr2.fa `.
  - __It helps you navigate directory trees__. Expecially at first, navigating and finding files on the command line feels much more cumbersome than with a graphical file browser. Tab completion can alleviate this by allowing you to quickly list the contents of a directory when exploring. For example, with `ls genomes/` on the command prompt pressing `tab` might list `Drosophila_melanogaster`, `Mus_musculus`, and `Homo_sapiens`. Continuing with `ls genomes/M`, `tab`, `tab`, `tab` might complete to `ls genomes/Mus_musculus/` and list `revision5`, and `revision6`, and so on and so forth.
 
-## Command history
+### Command history
 
 `bash` stores the last commands you entered for reuse, with or without modification. Use the up and down arrows on your keyboard to cycle through the last commands you have run. This is especially handy when troubleshooting or testing out the options of a very long command, as well as when running the same command with slightly different inputs. You can also output a list of all your previous commands with `history`, or search and `r`ecall a previous command with `Ctrl + r`.
 
