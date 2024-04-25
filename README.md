@@ -118,6 +118,45 @@ Less commonly known are the wildcard patterns `[...]` and `{...}`.
 
 Wildcard expressions are expanded by the shell into file names that match them before the command is executed, so typing `ls chr[2-4].fasta` is exactly equivalent to typing `ls chr2.fasta chr3.fasta chr3.fasta`, assuming that all three of these files exist.
 
+### Variables
+
+As `bash` is a full fledged programming-language, values can be stored in variables by __assigning__ them with the `=` character (e.g. `greeting="Hello world!"` and `num=7`). The value of variables can then be accessed by prepending `$` to the variable name (e.g. `$greeting` and `$num`).
+
+You can use `echo` to check the value of variables. For example, `echo $greeting` would print `Hello world!`
+
+Because `bash` uses spaces to break up the __arguments__ of a command, strings including spaces or other special characters (e.g. `$`, `[`, `*`) must be enclosed in quotes. Single quotes `'` preserve all special characters, while double quotes `"` allow for escaping, variable expansion, and command substitution. Within double quotes the escape character is backslash `\`, which makes any character following it be interpretted literally.
+
+```
+$ echo 'Hello $name!'
+Hello $name!
+$ echo "Hello $name!"
+Hello CGRL!
+$ echo 'Hello \$name!'
+Hello \$name!
+$ echo "Hello \$name!"
+Hello $name!
+```
+
+Some variables are used by `bash` itself, and these important variables conventionally use all caps, so you should use lowercase or CamelCase for your variable names to avoid accidentally overwriting them. For example, the path to your home directory is stored in `$HOME`, and `$SHELL` stores the path to your shell program (in this case, `bash`, most likely located at `/bin/bash`).
+
+### Environment
+
+The set of all currently defined variables in the shell is termed the __environment__, and can be viewed with the `env` command.
+
+#### PATH
+
+`PATH` is one of the most important __environment variables__ to be aware of. `PATH` lets the shell know where to look for installed programs, including `bash` itself and core commands like `ls`, `mkdir`, and `rm`. `PATH` is merely a colon (`:`) separated list of paths. Whenever you enter a command `bash` searches for a program that matches the first term in your command, starting in the first directory listed in `PATH` and proceeding from left to right. Try `echo $PATH` and you will most likely see that `PATH` ends with `/usr/sbin`, `/usr/bin`, `/sbin`, and `/bin`. These directories contain system-wide programs, with `/bin` containing the lowest level essential programs.
+
+__Installing programs on UNIX systems almost always includes adding that program to `PATH`.__ You can run any executable by explicitly specifying the path to the executable (e.g. `/home/$USER/blast/blastn`), but for convenience programs can be added to `PATH` in one of several ways:  
+1. The executable can be moved or copied into a directory already included in `PATH`. Traditional places for this include `/usr/local/bin` for programs used by all users and `$HOME/bin` for programs used only by yourself.
+2. The executable can be linked into a directory already included in `PATH`. This may be desirable if the program references or uses other files and you want to keep them all in the same directory.
+3. The path to the executable is prepended, or occasionally appended, to `PATH`. For example, `PATH=$HOME/blast:$PATH` would add all the BLAST executables (installed to your home directory) to your `PATH`. __Forgetting to include `$PATH` when modifying this variable will break your environment, and is one of the most common panic-inducing mistakes.__ Modifying the value of `PATH` on the command line like this will be temporary, however, and it will be restored to its default value if you log out and back in or open a new terminal. We will discuss how to "permanently" modify the value of `PATH` in the next section.
+
+#### Environment Configuration Files
+
+
+
+
 
 
 
