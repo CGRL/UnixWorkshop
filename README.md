@@ -139,6 +139,11 @@ Hello $name!
 
 Some variables are used by `bash` itself, and these important variables conventionally use all caps, so you should use lowercase or CamelCase for your variable names to avoid accidentally overwriting them. For example, the path to your home directory is stored in `$HOME`, and `$SHELL` stores the path to your shell program (in this case, `bash`, most likely located at `/bin/bash`).
 
+### Parameter Expansion and Command Substitution
+
+
+
+
 ### Environment
 
 The set of all currently defined variables in the shell is termed the __environment__, and can be viewed with the `env` command.
@@ -150,10 +155,48 @@ The set of all currently defined variables in the shell is termed the __environm
 __Installing programs on UNIX systems almost always includes adding that program to `PATH`.__ You can run any executable by explicitly specifying the path to the executable (e.g. `/home/$USER/blast/blastn`), but for convenience programs can be added to `PATH` in one of several ways:  
 1. The executable can be moved or copied into a directory already included in `PATH`. Traditional places for this include `/usr/local/bin` for programs used by all users and `$HOME/bin` for programs used only by yourself.
 2. The executable can be linked into a directory already included in `PATH`. This may be desirable if the program references or uses other files and you want to keep them all in the same directory.
-3. The path to the executable is prepended, or occasionally appended, to `PATH`. For example, `PATH=$HOME/blast:$PATH` would add all the BLAST executables (installed to your home directory) to your `PATH`. __Forgetting to include `$PATH` when modifying this variable will break your environment, and is one of the most common panic-inducing mistakes.__ Modifying the value of `PATH` on the command line like this will be temporary, however, and it will be restored to its default value if you log out and back in or open a new terminal. We will discuss how to "permanently" modify the value of `PATH` in the next section.
+3. The path to the executable is prepended, or occasionally appended, to `PATH`. For example, `PATH=$HOME/blast:$PATH` would add all the BLAST executables (installed to your home directory) to your `PATH`. __Forgetting to include `$PATH` when modifying this variable will break your environment, and is one of the most common panic-inducing mistakes.__ Modifying the value of `PATH` on the command line like this will be temporary, however, and it will be restored to its default value if you log out and back in or open a new terminal. We will discuss how to "permanently" modify the value of `PATH` in the next sections.
 
 #### Environment Configuration Files
 
+When you start a `bash` session a series of scripts are run which configure your environment by setting variables, including `PATH`. For login shells (i.e. when you log in either at a local console or through SSH) first, a shared configuration file, `/etc/profile`, is run, then a user-specific file, `$HOME/.bash_profile` is run. Non-login shells are created when you start a shell by opening the terminal on Linux systems or through the `screen` command (more on this later), and instead `/etc/bash.bashrc` and `$HOME/.bashrc` are used. However, `.bash_profile` very often invokes `.bashrc` to make sure that all variables have been set.
+
+__A Noteable Difference in OSX__ is that `/etc/profile` and `$HOME/.bash_profile` are _not_ run when you first log in. Therefore, in order to make sure that these essential configuration files get run, OSX creates login shells when you launch a terminal. Furthermore, the default `/etc/profile` and `$HOME/.bash_profile` files in OSX _do not_ invoke `.bashrc`. That means that, when working on a Mac, whenever you see instructions telling you to add something to your `.bashrc` file you should instead add it to your `.bash_profile` because, by default, `.bashrc` is never used.
+
+#### Source and Export
+
+`bash` uses a concept called "scoping", which means that variables are only defined within certain contexts. Among other things, this prevents variables defined inside one function from affecting variables defined in another, as well as variables defined in a script from affecting your environment. Therefore, merely assigning a value to an environment variable within a configuration script will not affect your environment.
+
+`source` or `.` is used to run a shell script in the current shell, as if you had typed each of the lines of code on the command line yourself. This means that variables defined within the script will be available in your current scope (i.e. in your current interactive terminal), otherwise they would be lost from memory when the script completes.
+
+The largest scope is the environment (yes, I lied a bit above in my definition of the environment), and variables must be further `export`ed up to the environment level. Environment variables are passed along to sub-shells, such as when running scripts, or when those scripts run scripts, etc.
+
+#### Example: Adding BLAST to PATH
+
+Taken together, you now have the knowledge to "permanently" add a program to your `PATH` environment variable such that you can run the program merely by typing its name. In this example, suppose that the suite of BLAST tools is installed to `$HOME/blast`.
+
+First, you would prepend the location of the BLAST suite to your PATH environment variable by adding the following line to your `.bash_profile` (OSX) or `.bashrc` (Linux) file:  
+
+```export PATH=$HOME/blast:$PATH```
+
+However, this would not take effect until you started a new shell session, so to make the configuration changes take affect, you would run:
+Linux: 
+
+```. $HOME/.bashrc```
+
+OSX: 
+
+```. $HOME/.bash_profile```
+
+#### PS1
+
+#### Aliases
+
+### Scripts
+
+### Interrupts
+
+## File Systems
 
 
 
