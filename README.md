@@ -106,4 +106,18 @@ Here are some reaons why you should _always_ use tab completion:
 
 `bash` stores the last commands you entered for reuse, with or without modification. Use the up and down arrows on your keyboard to cycle through the last commands you have run. This is especially handy when troubleshooting or testing out the options of a very long command, as well as when running the same command with slightly different inputs. You can also output a list of all your previous commands with `history`, or search and `r`ecall a previous command with `Ctrl + r`.
 
+### Wildcard characters
+
+You are most likely familiar with the wildcard characters `*` and `?`, which alone can make the command line more powerful than graphical shells. A point of nuance is that `*` can indicate any number of characters _including no characters_, while `?` indicates any single character. You can use `?*` to indicate one or more characters, and `??*` to indicate two or more characters, etc.
+
+Less commonly known are the wildcard patterns `[...]` and `{...}`.
+
+`[...]` matches any single character enclosed in the brackets. For example, `chr[23].fasta` would include `chr2.fasta` and `chr3.fasta`. You can also indicate a range of characters with `-`, so `chr[2-4].fasta` would include `chr2.fasta`, `chr3.fasta`, and `chr4.fasta`. The range is determined alphanumerically, with digits preceding letters and all capital letters preceding all lowercase letters (i.e. `0123456789ABC...abc...`). The full ordering is the ASCII sort order, which includes special characters like spaces and punctuation. You can include select characters as well as one or more ranges, such as `chr[XY3-57-8].fasta` which would include chromosomes X, Y, 3, 4, 5, 7, and 8, but not any chromosome number 10 or higher, as the pattern only matches a single character. `chr*[3].fasta` would include any chromosome ending in 3, including 3, 13, 23, etc.
+
+`{...}` matches a comma separated list of strings. For example, `Homo_{sapiens,erectus}` would include both `Homo_sapiens` and `Homo_erectus` but not `Homo_habilis`. This functions a little differently than `[...]` in that `[...]` will try to find any matches and only throw an error if no match is found, `{...}` will try to find every match and throw an error for each item in the list that doesn't exist. For example, `ls chr[XYZ].fasta` will report `chrX.fasta` and `chrY.fasta` without error, but `ls chr{X,Y,Z}.fasta` will additionally reply "LS: cannot access 'chrZ.fasta': No such file or directory" (assuming you aren't working on a bird, that is).
+
+Wildcard expressions are expanded by the shell into file names that match them before the command is executed, so typing `ls chr[2-4].fasta` is exactly equivalent to typing `ls chr2.fasta chr3.fasta chr3.fasta`, assuming that all three of these files exist.
+
+
+
 
