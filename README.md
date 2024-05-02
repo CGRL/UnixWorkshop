@@ -127,6 +127,7 @@ You can use `echo` to check the value of variables. For example, `echo $greeting
 Because `bash` uses spaces to break up the __arguments__ of a command, strings including spaces or other special characters (e.g. `$`, `[`, `*`) must be enclosed in quotes. Single quotes `'` preserve all special characters, while double quotes `"` allow for escaping, variable expansion, and command substitution. Within double quotes the escape character is backslash `\`, which makes any character following it be interpretted literally.
 
 ```
+$ name=CGRL
 $ echo 'Hello $name!'
 Hello $name!
 $ echo "Hello $name!"
@@ -139,10 +140,126 @@ Hello $name!
 
 Some variables are used by `bash` itself, and these important variables conventionally use all caps, so you should use lowercase or CamelCase for your variable names to avoid accidentally overwriting them. For example, the path to your home directory is stored in `$HOME`, and `$SHELL` stores the path to your shell program (in this case, `bash`, most likely located at `/bin/bash`).
 
-### Parameter Expansion and Command Substitution
+### Parameter Expansion
 
+In the above examples we substituted the value of `$name` using `$`, but you can also perform some operations on the value of a variable and substitute a modified value using the complete syntax: `${variable}`. This syntax can also be handy when the variable is followed by a character that you don't want to be interpreted as part of its name.
 
+```
+$ species=human
+$ echo "Greetings, $speciess!"
+Greetings, !
+$ echo "Greetings, ${species}s!"
+Greetings, humans!
+```
 
+__Substrings__ can be extracted from the value of a variable using `${variable:offset:length}`. Note that strings are 0-indexed in `bash`, so the value of `offset` is the number of characters to strip off the front. If no `length` is provided then the substring from `offset` to the end will be substituted, while if a negative `length` is provided then `length` equals the number of characters to strip off the end. Likewise, if `offset` is negative then `offset` is used as the number of characters from the end to keep, however, you must separate `offset` from the colon (`:`) by a space so as not to confuse substring expansion with default value assignment, which we will cover next.
+
+```
+$ alphabet=abcdefghijklmnopqrstuvwxyz
+$ echo ${alphabet:3}
+defghijklmnopqrstuvwxyz
+$ echo ${alphabet:3:6}
+defghi
+$ echo ${alphabet:3:-2}
+defghijklmnopqrstuvwx
+$ echo ${alphabet:22:-10}
+bash: -10: substring expression < 0
+$ echo ${alphabet:-7:3} # This won't work.
+abcdefghijklmnopqrstuvwxyz
+$ echo ${alphabet: -7:3}
+tuv
+```
+
+__Default Values__ can be given when variables are either *unset* or *null* using the `${variable:-default}` syntax. *Unset* variables are essentially variable names that are not found, while a *null* variable has an empty value (i.e. `""`). To substitute a default value only when a varaible is *unset*, but use *null* values when present merely omit the colon.
+
+```
+$ x=123
+$ y=''
+$ echo ${v-abc}
+123
+$ echo ${z-abc}
+abc
+$ echo ${z:-abc}
+abc
+$ echo ${y-abc}
+
+$ echo ${y:-abc}
+abc
+```
+
+__Pattern Substitution__ allows you to use pattern matching just as in filename expansion (see the wildcards section, above) to dynamically edit the value of variables. The syntax for this is `${variable/pattern/new_string}`.
+
+```
+$ echo ${alphabet/tuv/TUV}
+abcdefghijklmnopqrsTUVwxyz
+$ echo ${alphabet/??v/TUV}
+abcdefghijklmnopqrsTUVwxyz
+$ echo ${alphabet/d*w/...}
+abc...xyz
+```
+
+The basic for only replaces the first instance of a match with `pattern`, but using `${variable//pattern/new_string}` replaces all instances of a match.
+
+```
+$ game="duck duck goose"
+$ echo ${game/duck/swan}
+swan duck goose
+$ echo ${game//duck/swan}
+swan swan goose
+```
+
+Lastly, `${variable/#pattern/new_string}` and `${variable/%pattern/new_string}` can be used to match only at the beginning and end of the variable string, respectively.
+
+```
+${game/#goose/swan}
+duck duck goose
+$ echo ${game/%goose/swan}
+duck duck swan
+```
+
+There are many other forms of parameter expansion that we won't cover here which can be used to do things like count the number of characters in the value of a variable, change the case of characters, automatically quote and escape strings, and perform other quick edits to strings.
+
+#### Command Substitution
+
+Sometimes you don't want to substitute the value of a variable, but the output of another `bash` command. This is termed "command substitution" and uses parenthesis instead of braces, like so: `$(command)`. This can also be used to store the output of a command in a variable.
+
+```
+$ directories=$(ls $HOME)
+$ echo ${directories}
+config Desktop Documents Downloads Dropbox Music Pictures QB3 snap Templates
+```
+
+We won't dwell too much on command substitution, as there is little we can do with it using basic commands, but it can be an incredibly powerful tool because it allows you to chain the output of commands to create new commands. Additionally, you will often see this syntax used in generic one-line solutions to questions like "How can I do X?" on help forums like Stack Overflow. For example, the following can be used to find out what package a given command (in this case `blastn`) belongs to on Debian Linux systems:
+
+```
+$ dpkg -S $(which blastn)
+ncbi-blast+: /usr/bin/blastn
+```
+
+#### Arithmetic Expansion
+
+Arithmetic expressions can be evaulated and substituted when enclosed in double-parenthesis: `$((expression))`.
+
+```
+$ echo $((2+3))
+5
+```
+
+This can become more useful by nesting expansions.
+
+```
+$ x=3
+$ y=7
+$ echo $(($x*$y))
+21
+```
+
+The command `wc -l` returns the number of lines in a file. The fastq format uses 4 lines for every read, so we can use `wc -l` in combination with arithmetic expansion to get the number of reads in a fastq file.
+
+```
+$ echo $(($(wc -l < myreads.fastq) / 4))
+1081615
+```
 
 ### Environment
 
