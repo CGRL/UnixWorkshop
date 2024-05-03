@@ -443,10 +443,8 @@ arg1 arg2 is a sentence
 
 Sometimes a command takes a while to execute, either because it's doing a lot of work, it's caught in an infinite loop, or it's waiting on something. There are two inputs used to cancel execution or end a program: __Ctrl+C__ and __Ctrl+D__.
 
-"""
-__Side Note: Key Combo Shorthand__
-When representing key-combinations in UNIX documentation or FAQs it is common to represent Ctrl with the caret character, `^`, or simply `C`. So Ctrl+C might be written as `^c` or `C-c`. The Meta key (Alt on PC, Command on Mac) is often represented by `M`, so Alt+w might be written as `M-w`. These combinations will sometimes be written case-sensitively, so `C-c` (Ctrl+C) would be differnt from `C-C` (Ctrl+Shift+C).
-"""
+>__Side Note: Key Combo Shorthand__
+>When representing key-combinations in UNIX documentation or FAQs it is common to represent Ctrl with the caret character, `^`, or simply `C`. So Ctrl+C might be written as `^c` or `C-c`. The Meta key (Alt on PC, Command on Mac) is often represented by `M`, so Alt+w might be written as `M-w`. These combinations will sometimes be written case-sensitively, so `C-c` (Ctrl+C) would be differnt from `C-C` (Ctrl+Shift+C).
 
 __^c__ sends the interrupt signal (SIGINT) to the current foreground process, which is usually what you want to stop execution. Some programs don't terminate when receiving SIGINT, though, such as your `bash` terminal itself which will just give you a new command line, so is often faster than deleting a long command you've decided not to execute.
 
