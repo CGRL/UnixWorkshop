@@ -344,7 +344,121 @@ Again, to save these aliases you will need to declare them within `.bashrc`. Som
 
 ### Scripts
 
+Shell scripts are just plain text files that contain a sequence of shell commands to be run. By convention, shell scripts that are _portable_, meaning they are written such that they should run using any of the UNIX shells derived from `sh`, are given the `.sh` file extension, while scripts that use features specific to a given shell will use a corresponding file extension (e.g. `.zsh`, `.bash`, or `.csh`). In practice, though, many people simply use the `.sh` extension regardless of the portability of the script. This works because the program used to run a script is not determined by the file extension, but by the first line in the script, termed the "shebang" because it starts with the "sharp" character `#` and the "bang" character `!`, followed by the path to the intended shell program.
+
+__You should always start your `bash` scripts with one of the following two shebangs:__
+
+```
+#!/usr/bin/env bash
+#!/bin/bash
+```
+
+There are a couple key differences between writing `bash` scripts and using `bash` interactively, which we have alredy hinted at. First, by running a shell script you create a subprocess running a new shell, and thus the context within that shell is different from the context of your terminal shell. Only the environment variables will be inherited by this new shell unless you run the script using the `source` or `.` commands, which will cause the script to be executed in the current shell.
+
+example.sh
+```
+#!/bin/bash
+echo $localVariable
+localVariable="in the script"
+echo $localVariable
+echo $environmentVariable
+environmentVariable="in the script"
+echo $environmentVariable
+export exportedVariable="in the script"
+```
+
+Run the script:
+```
+$ localVariable="outside the script"
+$ export environmentVariable="outside the script"
+$ ./example.sh # this executes the script in a new shell
+
+in the script
+outside the script
+in the script
+$ echo $localVariable
+outside the script
+$ echo $environmentVariable
+outside the script
+$ echo $exportedVariable
+
+$ . example.sh # this executes the script in the current shell
+outside the script
+in the script
+outside the script
+in the script
+$ echo $localVariable
+in the script
+$ echo $environmentVariable
+in the script
+$ echo $exportedVariable
+in the script
+```
+
+Second, scripts have __parameters__ that can be used to pass __arguments__ into the script. The terms "parameter" and "argument" are often used interchangeably, but technically a parameter is the variable which is written into a script or function, while an argument is the value assigned to that parameter during execution. In the mathematical function f(x), x would be the parameter, but values like 2, pi, or -13 could be arguments to the function. An alliterative mnemonic to remember this is that "arguments are actual".
+
+__Positional Parameters__, where arguments must be passed in order, separated by spaces, following the name of the script, are most commonly used for `bash` scripts. The values of positional arguments can be accessed within a script using the parameters `$0`, `$1`, `$2`, etc. Technically, the program you are running is `bash`, and the name of the script is just the first argument to `bash`, so `$0` is always the name of the script itself and it is seldom used.
+
+example.sh:
+```
+#!/bin/bash
+echo $0
+echo $1
+echo $2
+echo $3
+```
+
+Run the script:
+```
+$ ./example.sh arg1 arg2
+./example.sh
+arg1
+arg2
+
+```
+
+`$*` or `$@` expand to all the positional arguments, starting with `$1`. There are subtle differences between `$*` and `$@` but for most purposes they can be used interchangeably. Additionally, if you want to include spaces in argument you merely need to enclose the argument in quotes.
+
+example.sh:
+```
+#!/bin/bash
+echo $0
+echo $1
+echo $2
+echo $*
+echo $@
+```
+
+Run the script:
+```
+$ ./example.sh arg1 "arg2 is a sentence"
+./example.sh
+arg1
+arg2 is a sentence
+arg1 arg2 is a sentence
+arg1 arg2 is a sentence
+```
+
 ### Interrupts
+
+Sometimes a command takes a while to execute, either because it's doing a lot of work, it's caught in an infinite loop, or it's waiting on something. There are two inputs used to cancel execution or end a program: __Ctrl+C__ and __Ctrl+D__.
+
+"""
+__Side Note: Key Combo Shorthand__
+When representing key-combinations in UNIX documentation or FAQs it is common to represent Ctrl with the caret character, `^`, or simply `C`. So Ctrl+C might be written as `^c` or `C-c`. The Meta key (Alt on PC, Command on Mac) is often represented by `M`, so Alt+w might be written as `M-w`. These combinations will sometimes be written case-sensitively, so `C-c` (Ctrl+C) would be differnt from `C-C` (Ctrl+Shift+C).
+"""
+
+__^c__ sends the interrupt signal (SIGINT) to the current foreground process, which is usually what you want to stop execution. Some programs don't terminate when receiving SIGINT, though, such as your `bash` terminal itself which will just give you a new command line, so is often faster than deleting a long command you've decided not to execute.
+
+__^d__ sends the end of file signal (EOF), which results in exitting when a program is expecting a stream of input. The commands you type into an interactive shell are one such stream of input, so `^d` will end your current shell session. Common programming language interpreters such as R and Python also expect a stream of input code, so you typically need to use `^d` to exit out of them.
+
+In practice, get in the habit of starting with `^c` so as to avoid accidentally closing your terminal, and if that doesn't work fall back to `^d`.
+
+### Cutting and Pasting on PC Terminals
+
+Apple originated the convention of copying, cutting, and pasting using the X, C, and V keys, which Windows copied in the early 90s. While Apple used `M-c` for copy, Windows opted for `^c` (probably because of the favorable position of the Ctrl key on keyboards), and the Windows combination has since become ubiquitous. Unfortunately, this created a conflict on Linux systems, as `^c` was already in use for SIGINT.
+
+The solution is to use `^X`, `^C`, and `^V` for cut, copy, and paste in terminals, respectively. Yes, this is more awkward, and even with loads of pracitce you will still mess it up sometimes, especially when copy-pasting to and from your browser (such as when writing tutorials on UNIX). That said, you will get used to it sooner than you expect.
 
 ## File Systems
 
