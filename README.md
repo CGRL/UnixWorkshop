@@ -82,7 +82,7 @@ A __shell__ is the othermost layer of an operating system which displays informa
 This tutorial will cover the functionality of the most common UNIX shell you will encounter: __Bash (Bourne Again SHell)__, the successor to the __Bourne Shell (sh)__ which you might occasionally encounter. Most UNIX systems will have both `bash` and `sh` installed, and many other CLIs can be installed alongside which have different syntax and functionality, such as:  
  - __C Shell__ `csh` and __TENEX C Shell__ `tcsh` are designed to look more like the language, C. `tcsh` additionally provides command completion functionality.
  - __KornShell__ `ksh` attempts to combine the best aspects of `sh` and `csh`.
- - __Z Shell__ `zsh` implements quality-of-life features like spellcheck and synced command history.
+ - __Z Shell__ `zsh` implements quality-of-life features like spellcheck and synced command history, and has been the default shell for macOS since 2019.
 
 ### The Command Prompt
 
@@ -198,7 +198,7 @@ $ echo ${alphabet/d*w/...}
 abc...xyz
 ```
 
-The basic for only replaces the first instance of a match with `pattern`, but using `${variable//pattern/new_string}` replaces all instances of a match.
+The basic form only replaces the first instance of a match with `pattern`, but using `${variable//pattern/new_string}` replaces all instances of a match.
 
 ```
 $ game="duck duck goose"
@@ -278,7 +278,7 @@ __Installing programs on UNIX systems almost always includes adding that program
 
 When you start a `bash` session a series of scripts are run which configure your environment by setting variables, including `PATH`. For login shells (i.e. when you log in either at a local console or through SSH) first, a shared configuration file, `/etc/profile`, is run, then a user-specific file, `$HOME/.bash_profile` is run. Non-login shells are created when you start a shell by opening the terminal on Linux systems or through the `screen` command (more on this later), and instead `/etc/bash.bashrc` and `$HOME/.bashrc` are used. However, `.bash_profile` very often invokes `.bashrc` to make sure that all variables have been set.
 
-__A Noteable Difference in OSX__ is that `/etc/profile` and `$HOME/.bash_profile` are _not_ run when you first log in. Therefore, in order to make sure that these essential configuration files get run, OSX creates login shells when you launch a terminal. Furthermore, the default `/etc/profile` and `$HOME/.bash_profile` files in OSX _do not_ invoke `.bashrc`. That means that, when working on a Mac, whenever you see instructions telling you to add something to your `.bashrc` file you should instead add it to your `.bash_profile` because, by default, `.bashrc` is never used.
+__A Noteable Difference in macOS__ is that, since 2019, the default shell has been `zsh`, rather than `bash`. That means that, when working on a Mac, whenever you see instructions telling you to add something to your `.bashrc` file you should instead add it to your `.zshrc`.
 
 #### Source and Export
 
@@ -292,7 +292,7 @@ The largest scope is the environment (yes, I lied a bit above in my definition o
 
 Taken together, you now have the knowledge to "permanently" add a program to your `PATH` environment variable such that you can run the program merely by typing its name. In this example, suppose that the suite of BLAST tools is installed to `$HOME/blast`.
 
-First, you would prepend the location of the BLAST suite to your PATH environment variable by adding the following line to your `.bash_profile` (OSX) or `.bashrc` (Linux) file:  
+First, you would prepend the location of the BLAST suite to your PATH environment variable by adding the following line to your `.bashrc` (Linux) or `.zshrc` (macOS) file:  
 
 ```export PATH=$HOME/blast:$PATH```
 
@@ -301,13 +301,46 @@ Linux:
 
 ```. $HOME/.bashrc```
 
-OSX: 
+macOS: 
 
-```. $HOME/.bash_profile```
+```. $HOME/.zshrc```
 
 #### PS1
 
+`PS1` is the environment variable used for your command prompt. Try `echo $PS1` and you will probably see something like `[\u@\h \W]\$` on a remote RedHat-based Linux server, or `\[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$` on a Ubuntu derivative, or `%n@%m %1~ %# ` on macOS. These lines of gibberish utilize many special and escape characters, and the full documentation on how to set `PS1` is quite extensive. Luckily, with a few search queries you should be able to find examples or guides to help you customize your command prompt to your own liking.
+
+`\u`, `\h`, and `\w` represent your username, hostname, and current working directory, respectively. Personally, my username and hostname appear in the title bar of my terminal window already, so I like to remove them from my command prompt. I also prefer to display only my topmost working directory (`\W`), rather than the full path (`\w`), in order to save space, and I like to make my prompt a different color so I can easily distinguish my input from output. The following will turn your prompt a pleasant teal color and reduce it to only your topmost working directory:
+
+```
+export PS1="\[\033[01;32m\]\W\[\033[00m\]\$"
+```
+
+Like before, this change will be temporary, so to make it permanent you would need to add this line to your `.bashrc` file.
+
 #### Aliases
+
+Aliases allow you to give a nickname to a command, including potentially long or complicated commands. Aliases are like variables, but are much more restricted. First, while the value of variables is accessed with `$`, you need merely type the name of an alias to invoke it. However, aliases must be used as the first word of a command, and alias names cannot contain special characters.
+
+Here are some helpful aliases you may want to use:
+
+```
+alias ..="cd .." # Go up one level in the directory tree.
+alias ...="cd ../.." # Go up two levels.
+alias ....="cd ../../.." # Go up three levels.
+alias .....="cd ../../../.." # Go up four levels.
+alias ll="ls -l" # List the long form (including details) contents of a directory.
+alias la="ls -a" # List all files (including hidden).
+alias lla="ls -la" # List all files in long form.
+alias path='echo -e ${PATH//:/\\n}' # Print each directory in your $PATH on its own line.
+```
+
+Aliases are convenient, but can also save you a ton of time and frustration. Consider making an alias for any command that you find yourself running frequently, especially if you always have to look up the correct syntax or lookup the target. For example, you may find yourself working interactively in a Docker container that has the difficult-to-remember identifier of "df784548666d". Creating an alias may significantly reduce the barrier of dropping into this environment to run some analyses.
+
+```
+alias dexec="docker exec -it df784548666d bash"
+```
+
+Again, to save these aliases you will need to declare them within `.bashrc`. Some people choose to organize all their aliases into a separate file, conventionally `.bash_aliases`, and then `source` this file at the end of their `.bashrc`.
 
 ### Scripts
 
