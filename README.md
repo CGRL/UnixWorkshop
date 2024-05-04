@@ -439,6 +439,16 @@ arg1 arg2 is a sentence
 arg1 arg2 is a sentence
 ```
 
+#### Options and Arguments
+
+Many UNIX programs besides scripts take arguments, as well as similar inputs termed "options". We won't cover how to write scripts that take options, but we will use this opportunity to cover these conventions in UNIX commmand execution.
+
+While arguments can contain any data passed to a function, script, or program, options are switches that alter the behavior of programs by toggling features on or off. Also, while arguments are often positional and mandatory, options are neither.
+
+Options usually have both a long form (e.g. `--long`) as well as a short form (e.g. `-l`), and the short form is often referred to as a "flag". Many shortform options can often be concatenated together, so `ls --all --directory` is the same as `ls -a -d` is the same as `ls -ad`.
+
+Some options take arguments, and these share a typical format with named arguments: `--parameter=argument`. Some programs (written by heathens) will have the argument separated from the parameter by a space, `--parameter argument`. Other programs will have parameters that take a list of items, and their documentation should specify how to delimit each item, commonly with commas `like,this,example` or enclosed in quotes then separated with spaces `"like this example".
+
 ### Interrupts
 
 Sometimes a command takes a while to execute, either because it's doing a lot of work, it's caught in an infinite loop, or it's waiting on something. There are two inputs used to cancel execution or end a program: __Ctrl+C__ and __Ctrl+D__.
@@ -446,9 +456,9 @@ Sometimes a command takes a while to execute, either because it's doing a lot of
 >__Side Note: Key Combo Shorthand__
 >When representing key-combinations in UNIX documentation or FAQs it is common to represent Ctrl with the caret character, `^`, or simply `C`. So Ctrl+C might be written as `^c` or `C-c`. The Meta key (Alt on PC, Command on Mac) is often represented by `M`, so Alt+w might be written as `M-w`. These combinations will sometimes be written case-sensitively, so `C-c` (Ctrl+C) would be differnt from `C-C` (Ctrl+Shift+C).
 
-__^c__ sends the interrupt signal (SIGINT) to the current foreground process, which is usually what you want to stop execution. Some programs don't terminate when receiving SIGINT, though, such as your `bash` terminal itself which will just give you a new command line, so is often faster than deleting a long command you've decided not to execute.
+`__^c__` sends the interrupt signal (SIGINT) to the current foreground process, which is usually what you want to stop execution. Some programs don't terminate when receiving SIGINT, though, such as your `bash` terminal itself which will just give you a new command line, so is often faster than deleting a long command you've decided not to execute.
 
-__^d__ sends the end of file signal (EOF), which results in exitting when a program is expecting a stream of input. The commands you type into an interactive shell are one such stream of input, so `^d` will end your current shell session. Common programming language interpreters such as R and Python also expect a stream of input code, so you typically need to use `^d` to exit out of them.
+`__^d__` sends the end of file signal (EOF), which results in exitting when a program is expecting a stream of input. The commands you type into an interactive shell are one such stream of input, so `^d` will end your current shell session. Common programming language interpreters such as R and Python also expect a stream of input code, so you typically need to use `^d` to exit out of them.
 
 In practice, get in the habit of starting with `^c` so as to avoid accidentally closing your terminal, and if that doesn't work fall back to `^d`.
 
@@ -460,8 +470,42 @@ The solution is to use `^X`, `^C`, and `^V` for cut, copy, and paste in terminal
 
 ## File Systems
 
+We covered the hardware that file systems run on, and now we will cover the proper usage of UNIX file systems. Most people have an intuitive sense of how file systems work, as we interact with them on a daily basis, but in our experience novice UNIX users waste an inordinate amount of time an lose an unnecessary amount of hair by not understanding file system basics.
+
+I assume you are already familiar with the basic navigational commands to Change Directories (`cd`), LiSt files and directories (`ls`), Print Working Directory (`pwd`), MaKe DIRectory/s (`mkdir`), and ReMove files (`rm`). We already covered the common options to `ls`, `-l` and `-a`, and you are also most likely familiar with using the Recursive option to remove directories (and all their contents), `rm -r`. So we will dive into the heirarchical structure of UNIX file systems.
+
+All UNIX systems use a tree-like heirarchical directory structure, and the base of the file system is termed the "root", and is represented by a slash `/`. Even systems with mutliple file systems have those file systems _mounted_ to particular directories under the root. The root file system is often separate from `/boot` and `/swap`, which serve special purposes, and sometimes from the users' home directories (`/home`). The `df` (Disk Free) command shows the available free space on each file system, and thus is an easy way to list the currently mounted file systems. The `-h` option stands for "human readable" and will report values in the greatest appropriate binary unit (i.e. K, M, G, T).
+
+### Paths
+
+Files and folders are specified by their __path__. UNIX systems always have a concept of your Current Working Directory (CWD) in the directory tree, and the path of a file is literally the directions to get from your CWD to the desired file.
+
+Because the CWD can change throughout the execution of a program, it is often desirable to provide a path relative to the root of the filesystem. Such paths are termed "absolute" because each file has only a single unique absolute path, and they always start with `/`. For example, `/home/$USER` is the absolute path to the current user's home directory.
+
+"Relative" paths start in CWD, and make use of `..` to represent "up one level", so `../../data/genomes` would specify "up two levels, then down into data, then into genomes.
+
+`~` (tilde) expands to your home directory, so `~/data/genomes` would be the same as `/home/$USER/data/genomes` or `$HOME/data/genomes`. `cd` with no arguments is often a shortcut for `cd ~`, so enterring `cd` on the command line is a quick way to get back to your home directory.
+
+Lastly, `.` represents your CWD. It is not immediately obvious how this would be useful, but remember that `bash` checks the directories in `PATH` for programs, and nowhere else. Thus, if you have a program that you want to run but you haven't added it to `PATH` you need to specify the path to the program explicitly. This is why we use `./example.sh`, above, to run the script `example.sh`, otherwise `bash` will search for `example.sh` in your `PATH` and fail to find it.
+
+When writing `bash` scripts, both absolute and relative paths run the risk of pointing to the wrong place. The file system of macOS, RedHat, or Ubuntu machines may be organized slightly differently, or perhaps a different user has installed a piece of software to a different location, so absolute paths are not always reliable. You may not even know the directory to which your script or program is downloaded or installed. To overcome this, relative paths are often used when writing complicated programs that consist of multiple components. One drawback of relative pathing is that the relative organization of these components must be preserved.
+
+### Links
+
+The complications of relative pathing is one of the reasons different methods of adding programs to `PATH` are employed when installing software. If a program depends on other files being in a relative position from the main executable then you may not be able to simply move or copy the main executable to a directory already in your `PATH`. You could add the new directory to your `PATH`, but that can be cumbersome, and sometimes there are other executables in with the main executable that you don't want to add to your `PATH`. In this last case, it may be preferable to _link_ the main executable to a directory already in your `PATH`.
+
+`ln $original $destination` is used to create links to $original within $destination. `ln -s` creates a __symbollic link (symlink)__, while `ln` with no options creates a __hard link__. Directories can only be symbollically linked to, while files can be either symbollicly linked or hard linked.
+
+A __symbolic link__ is a file that merely contains directions to another file. That may be an absolute path or a relative path _from the location of the symlink_. If the target is moved or removed, or a relative symlink is moved, such that the target file is no longer found at that location, then the symlink will be "broken".
+
+A __hard link__ is a file that addresses the same data as the original file, rather than merely the path to the original file. In general, hard links are much more robust to being moved around, but while symlinks can point to files on other filesystems (they are just a path), hard links lose their meaning when moved to a new file system.
 
 
 
+## Common Options
 
-
+-h
+-a
+-v
+-l
+-f
