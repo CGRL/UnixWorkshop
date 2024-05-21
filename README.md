@@ -647,6 +647,8 @@ __STDERR__
 
 ## Useful Tools
 
+## Package Managers
+
 ## Advanced Scripting (Logic)
 
 ### For Loops
