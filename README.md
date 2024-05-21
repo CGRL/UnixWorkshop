@@ -54,7 +54,7 @@ __Storage__ encompasses any long-term storage device which, unlike RAM, persist 
 
 A __File System (FS)__ is a logical system for organizing data on one or more storage devices. An operating system may divide a single hard drive into multiple file systems, termed "__partitions__", or it may spread a file system across multiple hard drives. From the user's perspective, it only matters which partition you are using, but the performance of that partition depends on both the type of file system and the hardware it is running on.
 
-UNIX systems are typically divided into multiple partitions, such as `/` (or root), `/home`, `/boot`, `/scratch`, and a `swap` partition. The `df` command lists the file systems, the space available on them, and the directories they are mounted to (more on this later).
+UNIX systems are typically divided into multiple partitions, such as `/` (or root), `/home`, `/boot`, `/scratch`, and a `swap` partition. The `df` command lists the partitions, the space available on them, and the directories they are mounted to (more on this later).
 
  __Input/Output (IO)__ is the process of writing data to (input) or reading data from (output) a file system. Many common operations in genomics and bioinformatics require relatively simple computation on a very large amount of data, and thus are more often limited by IO rather than CPU or pemory performance. For example, read trimming involves reading a large number of sequencing reads from storage, checking the quality scores, then writing most of the data right back out. Read trimming is an example of a task that is often "IO bound", meaning the time it takes to perform is dependent on IO speed rather than processor speed or the amount of memory available.
 
@@ -474,11 +474,11 @@ We covered the hardware that file systems run on, and now we will cover the prop
 
 I assume you are already familiar with the basic navigational commands to Change Directories (`cd`), LiSt files and directories (`ls`), Print Working Directory (`pwd`), MaKe DIRectory/s (`mkdir`), and ReMove files (`rm`). We already covered the common options to `ls`, `-l` and `-a`, and you are also most likely familiar with using the Recursive option to remove directories (and all their contents), `rm -r`. So we will dive into the heirarchical structure of UNIX file systems.
 
-All UNIX systems use a tree-like heirarchical directory structure, and the base of the file system is termed the "root", and is represented by a slash `/`. Even systems with mutliple file systems have those file systems _mounted_ to particular directories under the root. The root file system is often separate from `/boot` and `/swap`, which serve special purposes, and sometimes from the users' home directories (`/home`). The `df` (Disk Free) command shows the available free space on each file system, and thus is an easy way to list the currently mounted file systems. The `-h` option stands for "human readable" and will report values in the greatest appropriate binary unit (i.e. K, M, G, T).
+All UNIX systems use a tree-like heirarchical directory structure, and the base of the file system is termed the "root", and is represented by a slash `/`. Additional partitions are _mounted_ to particular directories under the root. The root partition is often separate from `/boot` and `/swap`, which serve special purposes, and sometimes from the users' home directories (`/home`). The `df` (Disk Free) command shows the available free space on each partition, and thus is an easy way to list the currently mounted partitions. The `-h` option stands for "human readable" and will report values in the greatest appropriate binary unit (i.e. K, M, G, T).
 
 ### Paths
 
-Files and folders are specified by their __path__. UNIX systems always have a concept of your Current Working Directory (CWD) in the directory tree, and the path of a file is literally the directions to get from your CWD to the desired file.
+Files and directories are specified by their __path__. UNIX systems always have a concept of your Current Working Directory (CWD) in the directory tree, and the path of a file is literally the directions to get from your CWD to the desired file.
 
 Because the CWD can change throughout the execution of a program, it is often desirable to provide a path relative to the root of the filesystem. Such paths are termed "absolute" because each file has only a single unique absolute path, and they always start with `/`. For example, `/home/$USER` is the absolute path to the current user's home directory.
 
@@ -499,6 +499,66 @@ The complications of relative pathing is one of the reasons different methods of
 A __symbolic link__ is a file that merely contains directions to another file. That may be an absolute path or a relative path _from the location of the symlink_. If the target is moved or removed, or a relative symlink is moved, such that the target file is no longer found at that location, then the symlink will be "broken".
 
 A __hard link__ is a file that addresses the same data as the original file, rather than merely the path to the original file. In general, hard links are much more robust to being moved around, but while symlinks can point to files on other filesystems (they are just a path), hard links lose their meaning when moved to a new file system.
+
+### Files
+
+The distinction between symlinks and hard links alludes to the overlooked nature of files: That files do not contain data themselves, but merely the address of the data on the disk. While paper filing systems are the prevaling metaphor used to understand digital file systems (e.g. desktop, folder, file), a library is more apt a metaphor for understanding how file systems actually work. Each partition consists of two parts: an area reserved for storing data, akin to the shelves in a library; and an area reserved for metadata, akin to the card catalogue. While we typically think of acting on files like interacting with a book, we are really interacting with only the card in the catalogue. The operating system acts like a fastidious librarian, and when we "open" a file it is as if we presented the card to the librarian, who then retrieves the book and deposits it on our desk.
+
+>__Side Note: File System Formats__  
+>Just as a library may be organized by Dewey Decimal Classification, Library of Congress Classification, or some other system, different file systems or different partitions within a file system may be formatted differently. You have likely encountered conflicts between Windows formats (NTFS & FAT32) and Macintosh formats (APFS & HFS+). Of these, FAT32 is the most widely supported, and thus is still often used for removable media despite being supplanted by NTFS around the year 2000. Like other older formats, FAT32 only supports volumes of up to 16 TB and files under 4 GB, making it unsuitable for many modern bioinformatics uses. The most common Unix filesystem is ext4, but you may encounter XFS, ZFS, or other fancy file systems on Linux systems.
+
+Just as a library catalogue contains various metadata about its collection, Unix files contain much more than just the file's name and where the data is located. The `--long` (`-l`) option for `ls` displays all this metadata in tabular format:
+
+```
+Permissions Type Owner Group Size Timestamp Name
+```
+
+__Permissions__ encodes what type of access is allowed for the file or directory. You must rely on the operating system/librarian to retrieve your data, and they may refuse without showing proper identification. We will cover how to read permissions in an upcoming section.
+
+__Type__ is `1` for a file or `2` for a directory.
+
+__Owner__ is the username of the file's owner.
+
+__Group__ is the name of a group which may have elevated permissions on the file. Usually, by default, users will belong to a private group with the same name as their username and files the user creates are added to their private group. For example, the `CGRL` user would belong to the `CGRL` group (and possibly others as well), and files would belong to `CGRL`/`CGRL` by default, thus not being shared with any other users.
+
+__Size__ in bytes, unless using the `--human-readable` (`-h`) option, in which case the sizes will be printed like `1K`, `234M`, `2G`, etc.
+
+__Timestamp__ is the date and time the file was last modified. For copies of files, this is generally the date the copy was made, but some tools such as `rsync` will have options like `--times` (`-t`) or `--archive` (`-a`) which preserve the modification time of the original on the copy. `touch` can be used to update the modification time of a file, as well as to create new empty files if the file does not already exist.
+
+#### Reading Files
+
+`cat` is short for "concatenate". As well as being used to concatenate multiple files together, it can be a quick way to dump the entire contents of a file to the terminal.
+
+`less` is a friendlier tool that lets you scroll through plain text files. A predecessor, `more`, allowed you to page forward (press any key for _more_) through text files. `less` additionally allows paging backwards, and is named via pun from the idiom "less is more".
+
+`grep`, which stands for Global Regular Expression Print, is like a "find" tool for searching the text of files, except that it can find patterns (termed "regular expressions", or "regex") as well as exact matches. The most basic usage for exact matches follows the pattern `grep QUERY FILE`, where QUERY and FILE are your search query and input file, respectively. __`grep` is extraordinarily useful, and you should at least check out a [basic tutorial like this one](https://www.digitalocean.com/community/tutorials/grep-command-in-linux-unix) to get a sense of what you can do with it.__
+
+#### Text Editors
+
+A word processor is a tool for composing and formatting text to be read by humans. A text editor is a tool for composing and editing plain text, such as sequence files or code. Word processors and text editors have different purposes, and thus very different functionalities.
+
+If you haven't already, __you need to learn to use a text editor__. People will get into heated arguments about which text editor is the best, but any will do. I recommend learning to use at least one text editor that works on the command line, though, as you will likely find occasions where you cannot use a graphical editor.
+
+Here are some noteable text editors and why you may want to consider them:
+
+__Vim__ is the most popular command-line editor. Vim uses a modal paradigm, where you switch between different modes depending on the task at hand (e.g. navigate, insert/compose, select, or command). Most commands use a single key or a simple combination, but what each key does changes depending on your mode.
+
+__Emacs__ is a well developed rival to Vim. Emacs uses a non-modal paradigm, more similar to other consumer programs where the keys always do the same thing, but the great number of shortcuts leads to arcane key combinations (e.g. `C-x C-s C-x C-c` to save and quit).
+
+__Nano__ is a simple and intuitive text editor that is already installed on most Linux systems. While easier to use at first, it is not as powerful as fully featured text editors like Vim or Emacs.
+
+__Notepad++__ is available on Windows.
+
+#### Integrated Development Environments (IDEs)
+
+An IDE is a comprehensive tool for writing code. An IDE usually has all the features of a text editor, plus additional tools like a file browser, object browser, interpreter, documentation, and (more recently) an AI assistant. IDEs can be incredibly useful, but are not always available on remote systems. However, many IDEs have the ability to edit remote files via SSH, and if you choose to use an IDE you should __definitely learn how to use the remote editing features__.
+
+### Permissions
+
+
+
+
+
 
 
 
