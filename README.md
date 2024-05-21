@@ -555,7 +555,56 @@ An IDE is a comprehensive tool for writing code. An IDE usually has all the feat
 
 ### Permissions
 
+There are three types of permission, read, write, and execute, each of which can be set at three levels, owner, group, and other. Group permissions are applied to any user who is a member of the same group as the file, while the "other" permissions are applied to all other user. The output of `ls -l` first has one column that is typically `d` for directories and `-` for files, then three columns each for the read, write, and execute, permissions of the owner, group, and other, respectively. For example, `-rwxrw-r--` signifies a file that has full permissions for the owner, read and write but not execute permission for the group, and only read permission for all others.
 
+Permissions are often represented in a bitwise manner. A permission that is allowed has a value of 1, while a disallowed permission has a value of 0, and permissions for owner, group, and other are grouped together and represented by a 3-bit number each, such that:
+
+|Symbolic|Binary|Decimal|Permissions|
+|:------:|:----:|:-----:|:----------|
+|---|000|0|None|
+|--x|001|1|Execute only|
+|-r-|010|2|Read only|
+|-rx|011|3|Read and execute|
+|w--|100|4|Write only|
+|w-x|101|5|Write and execute|
+|wr-|110|6|Write and read|
+|wrx|111|7|All|
+
+The set of permissions of a file are also known as its _modes_, which leads to the command `chmod` (for __ch__ange __mod__e) to alter file permissions. You can set the exact permissions of a file using three decimal numbers (0-7) corresponding to the owner, group, and other permissions. For example, `chmod 740 reads.fastq` would set full permissions for the owner, read access for members of the group, and no permissions for others.
+
+Alternatively, `chmod` can be used to edit or set permissions using the following symbolic notation:
+
+|Reference|Class|Description|
+|---------|-----|-----------|
+|u|user|file owner|
+|g|group|members of the file's group|
+|o|other|all other users|
+|a|all|all three of user, group, and other|
+
+|Operator|Description|
+|--------|-----------|
+|+|Add the specified permissions for the given class|
+|-|Remove the specified permissions for the given class|
+|=|Set the permissions for the given class|
+
+For example:
+```
+chmod u+x script.sh # Allow the owner to execute
+chmod o-r reads.fastq # Remove read access from others
+chmod go-w notes.txt # Remove write access from group and others
+chmod a=rw shared.txt # Set permissions for everyone to read and write only
+```
+
+#### Changing Ownership
+
+`chown` and `chgrp` are used to __ch__ange the __own__er and __gr__ou__p__ of files, respectively. For example:
+
+```
+chown CGRLuser genome.fasta # Gives genome.fasta to CGRLuser
+chgrp CGRL genome.fasta # Shares genome.fasta with other members of the CGRL group
+```
+
+Note that if you change the owner of a file away from yourself you won't be able to change it back without admin priveliges or the other user's help.
 
 
 
