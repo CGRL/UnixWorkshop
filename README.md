@@ -606,10 +606,74 @@ chgrp CGRL genome.fasta # Shares genome.fasta with other members of the CGRL gro
 
 Note that if you change the owner of a file away from yourself you won't be able to change it back without admin priveliges or the other user's help.
 
+## Users
 
+### Groups
 
+### Changing or setting passwords
 
+### root
 
+__sudo__
+
+__su__
+
+## Pipes
+
+### Standard Streams
+
+__STDIN__
+
+__STDOUT__
+
+__STDERR__
+
+### Redirection
+
+\> 1> 2>
+\>>
+
+<
+
+### Piping
+
+`|`
+
+`grep` again
+
+`tee`
+
+## Process Management
+
+## Useful Tools
+
+## Advanced Scripting (Logic)
+
+### For Loops
+
+### While Loops
+
+#### Until
+
+### If. . .Else
+
+#### Boolean Operators
+
+## Networking
+
+__ping__
+
+__ipconfig__
+
+### SSH
+
+__config__
+__known_hosts__
+__ssh keys__
+
+### FTP
+
+FTP file browsers
 
 ## Common Options
 
