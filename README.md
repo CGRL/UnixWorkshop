@@ -608,6 +608,8 @@ Note that if you change the owner of a file away from yourself you won't be able
 
 ## Users
 
+Now that you understand how file ownership works, it can be helpful to understand how users and groups actually work. Users are defined by a unique 32-bit \[0-4,294,967,295] __user identifier__, or __UID__, rather than by their username. We have already covered how your username is stored in the environment variable, $USER, and it can also be displayed with the command `whoami`. 
+
 ### Groups
 
 ### Changing or setting passwords
@@ -639,9 +641,17 @@ __STDERR__
 
 `|`
 
+`tee`
+
 `grep` again
 
-`tee`
+
+
+### Blocking
+
+### Non-standard streams
+
+fifos and files
 
 ## Process Management
 
