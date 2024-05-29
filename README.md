@@ -608,17 +608,57 @@ Note that if you change the owner of a file away from yourself you won't be able
 
 ## Users
 
-Now that you understand how file ownership works, it can be helpful to understand how users and groups actually work. Users are defined by a unique 32-bit \[0-4,294,967,295] __user identifier__, or __UID__, rather than by their username. We have already covered how your username is stored in the environment variable, $USER, and it can also be displayed with the command `whoami`. 
+Now that you understand how file ownership works, it can be helpful to understand how users and groups actually work. Users are defined by a unique 32-bit \[0-4,294,967,295] __user identifier__, or __UID__, rather than by their username. We have already covered how your username is stored in the environment variable, $USER, and it can also be displayed with `whoami`. Likewise, you can find your UID with `id`, along with information about your groups. Information about all users on the system, including usernames, UIDs, users' home directories, and their default login shells is stored in /etc/passwd.
+
+Files are associated with their owner by UID, rather than username, so if you reinstall the operating sytem or transfer a storage device from one system to another files may end up being owned by an undefined user or even a different user on the new system. For this reason, networked systems often employ a central authentication system that syncs user accounts between systems.
+
+`passwd` is the command to change or set password. Invoked with no arguments it lets you change your current password, but users with super user privelige (more on this soon) can change or set other users' passwords by providing the username as an argument to `passwd`. Similarly, these priveliged users can create new user accounts with `useradd`.
+
+```
+$ useradd newCGRLuser # creates a new account named newCGRLuser
+$ passwd newCGRLuser # set the password for the new user
+```
 
 ### Groups
 
-### Changing or setting passwords
+Like users, groups are defined by a __group identifier__, or __GID__. Each user account has an associated group with an identical name and ID which is intended for files that are not shared. Users may additionally belong to any number of other groups, which can be listed for yourself using `groups`, and their various GIDs are also displayed by `id`. New groups can be created with `groupadd` followed by the name of the new group.
 
-### root
+### Superusers
 
-__sudo__
+Unix systems have a single administrative user account that is able to make changes to other users and their files, termed the superuser, which has the username "root" and UID of 0. Many critical system files are also owned by root in order to protect them.
 
-__su__
+While it is very difficult to irreperably break a system using normal user account, it is trivially easy to wreck a system either through malicious intent or careless mistake as the superuser. For this reason, system administrators typically work from their own user accounts and only run specific commands as root.
+
+`sudo` stands for __s__ubstitute __u__ser __do__, but is often understood as "switch user do" or "super user do" is used to run a single command as another user. The target user is specified with the `-u` option, but most often `sudo` is invoked without specifying a user, which defaults to running the command as root. `sudo` will prompt you for your password, and depending on the system configuration authentication for a short timeout duration that prevents the need to re-enter your password repeatedly.
+
+```
+$ whoami
+CGRLuser
+$ sudo whoami
+[sudo] password for CGRLuser: 
+root
+$ sudo -u newCGRLuser whoami # No password prompt this time because I just authenticated.
+newCGRLuser
+```
+
+`su` (for __s__ubstitute __u__ser) lets you switch to a new user account. Again, if no user is specified then it will attempt to switch to root. You must authenticate with the target user's password unless you are root, and because the root account often doesn't have a password set `su` must often be used in conjunction with `sudo`. Return to your previous user session with `exit`.
+
+```
+$ whoami
+CGRLuser
+$ su newCGRLuser
+Password: 
+$ whoami
+newCGRLuser
+$ exit
+$ sudo su
+# whoami # note the change in the prompt from '$' to '#'
+root
+# exit
+exit
+```
+
+Superuser priveliges are assigned to groups, typically named "sudo", "admin", or "wheel", and superuser privelige is then allocated by adding users to this group.
 
 ## Pipes
 
