@@ -662,36 +662,85 @@ Superuser priveliges are assigned to groups, typically named "sudo", "admin", or
 
 ## Pipes
 
+Pipes are an incredibly powerful feature that allows you to send the output of one program to the input of another program. Redirection is a related concept that writes the output of a program to a file. 
+
 ### Standard Streams
 
-__STDIN__
+Programs always have three channels for input and output termed the standard streams.
 
-__STDOUT__
+__stdout__ is intended for the primary output of a program, and without being piped or redirected it is printed to terminal. Most of the output from these examples and from programs you are already familiar with comes from stdout. This output is often ASCII encoded text, but some programs will output binary data that will look like a random stream of garbage characters on your terminal.
 
-__STDERR__
+__stderr__ is intended for information about the execution of the program, such as logging info, warnings, and (as the name implies), error messages. Without redirecting stderr it is also printed to the terminal, but separating stdout from stderr allows you to direct your primary data and metadata to different places. For example, read filtering tools may output the filtered reads to stdout and progress updates, read counts, or error metrics to stderr.
+
+__stdin__ is intended for input to the program. Many programs can read data in from either a file or stdin when no file is specified. Rarely, you will encounter a program that takes stdin directly from terminal input.
+
+### The Pipeline Metaphor
+
+The nomenclature of process IO is derived metaphorically from physical plants such as a chemical plant or bioreactor, where modular components are connected with pipes through which the output of one reactor streams into the next. The metaphor of computer applications as fluid systems is further extended to the design paradigms of batch processing, where all the input comes at once, akin to a batch reactor, versus stream processing, where input comes continuously or intermitently, akin to a flow reactor.
+
+This metaphor is useful, but remember that computers are digital systems and the so-called "streams" are sequences of bits. The standard streams are more aptly defined as __queues__, typified by a "first in, first out" (FIFO) organization where the first bit to enter the stream is first bit to exit on the other end. Other data structures have a "last in, first out" (LIFO) organization, termed a "stack".
 
 ### Redirection
 
-\> 1> 2>
-\>>
+`>` redirects stdout to the specified file. Think of it like an arrow pointing to the file you want to send the output to. If the file doesn't already exist it will be created, but __if the file already exists it will be overwritten!__
 
-<
+`1>` is the same as `>` but explicitly refers to stdout.
+
+`2>` redirects stderr to the specified file.
+
+`>>` is used to append the output stream to the file, rather than overwrite the file. `1>>` explicitly specifies stdout to be appended, and `2>>` appends stderr.
+
+`2>&1` redirects stderr to stdout for when you want stdout and stderr jumbled together in the same file.
+
+__clobbering__ a file refers to unintentionally overwriting the file, such as by using `>` when you meant to use `>>`. You can add `set -o noclobber` to your .bashrc file to prevent redirection from overwriting files.
+
+`<` redirects the contents of a file on the right to stdin of the command on the left. For example, `sort < /etc/passwd` will list all users on the system sorted alphanumerically by their usernames, rather than by UIDs. This is less commonly used because many programs can read from either stdin or a file provided as an argument, and indeed, `sort /etc/passwd` works just as well and saves three keystrokes.
+
+Redirection of all three standard streams may be used in conjunction, such as in `trimReads < rawReads.fastq 1> trimmedReads.fastq 2> readTrimming.log`.
 
 ### Piping
 
-`|`
+`|` is the pipe symbol, and it sends stdout from the command on the left to stdin of the command to the right. Piping can be used to chain together many programs in a linear fashion, as well as be used in conjunction with redirection to save various logs and/or write the final output to a file, such as:
 
-`tee`
+```
+filterReads < rawReads.fastq 2> filter.log | trimReads 2> trim.log | alignReads 1> alignedReads.bam 2> alignment.log
+```
 
-`grep` again
+Piping programs together rather than redirecting output to various intermediate files not only saves you disk space, but is often much faster. First, all steps can be completed simultaneously with a single command rather than having to return and enter another command for subsequent steps. Second, the execution itself can be much faster. Recall that many bioinformatics utilities perform simple operations on large streams of input data, and are consequently prone to being IO bound. Piping keeps all the data in memory until it is finally written to the disk (e.g. via redirection, as above), and memory is often 10 or more times faster than disk IO. Keeping all this work in memory doesn't necessarily use more memory, either, because the final process can start working on the first bit of data while the first process is still reading and working through the input.
 
+Sometimes you want to write an intermediate file to the disk as well as process it through intermediate steps. `tee` copies data from stdin and writes it to a file as well as passing it along to stdout.
 
+```
+filterReads < rawReads.fastq 2> filter.log | trimReads 2> trim.log | tee cleanedReads.fastq | alignReads 1> alignedReads.bam 2> alignment.log
+```
+
+The above would run the same pipeline as previously, but would also save the filtered and trimmed reads to cleanedReads.fastq.
+
+#### Filtering output with `grep`
+
+`grep`, like many programs, can read from either stdin or a file, and thus can be used as a quick and handy way to filter output from other commands. For example, `ls -l *.fastq.gz | grep "April 19"` could be used to find all your sequencing read files from April 19th.
 
 ### Blocking
 
+Pipes act like buffers, storing a limited amount of data, and each process in a pipeline reads and writes to its streams in chunks. The order in which each process reads or writes data from its various streams is handled by the operating system scheduler, and generally you don't need to worry about it. However, sometimes one process in the pipeline stops because it is waiting for some condition or data that hasn't yet been provided by an upstream process. This state is known as being __blocked__, and the input stream of the blocked process may fill, preventing the upstream process from providing further output.
+
+Suppose you have a two step differential expression pipeline for RNAseq data. In the first step you align the reads to your reference transcriptome as well as count the total number of reads, then in the second step you count the number of reads that aligned to each transcript and normalize by the transcript length and total number of reads to obtain RPKM (Reads per Kilobase per Million mapped reads) values. The first step will only report the total number of reads after processing all of the reads, and if the second step is written such that it tries to read and store the total number of reads before tallying aligned reads then it will not begin working until the first step completes. The first step will never complete, though, because it is attempting to write the aligned reads to the blocked input of the second step.
+
+The maximum amount of data stored in a pipe is determined by settings of the operating system, while programs may determine the size of chunks that they read and write. Advanced users can adjust these settings either globally or for specific pipes and processes to overcome some blocking conditions, but it is often best to avoid upstream dependencies or circular dependencies which can cause deadlocked pipelines.
+
 ### Non-standard streams
 
-fifos and files
+Some programs require many inputs or outputs. These programs generally handle their input and output streams internally, rather than by utilizing the standard streams provided by the operating system. Often, this is done by creating non-standard streams directly to various files, termed file handles or file descriptors in various programming languages. File handles operate like redirected standard streams, and there are various safeguards to prevent the same file from being opened by multiple processes or multiple times by the same process. Unfortunately, this means that file handles are insufficient for acheiving the efficiencies of pipes.
+
+__Named pipes__, often referred to as __FIFOs__ after their organizational structure, provide a way to create non-linear pipelines. `mkfifo` creates a named pipe, which looks in many ways like a file, but two different processes can read and write from different ends of the named pipe simultaneously.
+
+```
+mkfifo my_pipe # create a FIFO in the current working directory
+alignReads < my_pipe > alignedReads.bam & # launch the alignment process, reading from the output end of the FIFO
+filterReads < rawReads.fastq > my_pipe # launch the filtering process, sending stdout to the input end of the FIFO
+```
+
+The above example is equivalent to `filterReads < rawReads.fastq | alignReads > alignedReads.bam` but using a named pipe.
 
 ## Process Management
 
