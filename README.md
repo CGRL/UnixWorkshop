@@ -678,7 +678,7 @@ __stdin__ is intended for input to the program. Many programs can read data in f
 
 The nomenclature of process IO is derived metaphorically from physical plants such as a chemical plant or bioreactor, where modular components are connected with pipes through which the output of one reactor streams into the next. The metaphor of computer applications as fluid systems is further extended to the design paradigms of batch processing, where all the input comes at once, akin to a batch reactor, versus stream processing, where input comes continuously or intermitently, akin to a flow reactor.
 
-This metaphor is useful, but remember that computers are digital systems and the so-called "streams" are sequences of bits. The standard streams are more aptly defined as __queues__, typified by a "first in, first out" (FIFO) organization where the first bit to enter the stream is first bit to exit on the other end. Other data structures have a "last in, first out" (LIFO) organization, termed a "stack".
+This metaphor is useful, but remember that computers are digital systems and the so-called "streams" are sequences of bits. The standard streams are more aptly defined as __queues__, typified by a "first in, first out" (FIFO) organization where the first bit to enter the stream is first bit to exit on the other end. Other data structures have a "last in, first out" (LIFO) organization, termed a "stack", which operate more like the pile of unread papers on your desk.
 
 ### Redirection
 
@@ -734,15 +734,94 @@ Some programs require many inputs or outputs. These programs generally handle th
 
 __Named pipes__, often referred to as __FIFOs__ after their organizational structure, provide a way to create non-linear pipelines. `mkfifo` creates a named pipe, which looks in many ways like a file, but two different processes can read and write from different ends of the named pipe simultaneously.
 
+In the following examples we will make use of `&`, which, when used at the end of a command, starts the process/es in the background, allowing you to continue to enter more commands to start the next process. (Commands running in the background may contintue to output text to the terminal, so this is another good reason to redirect that output to a file.)
+
 ```
-mkfifo my_pipe # create a FIFO in the current working directory
-alignReads < my_pipe > alignedReads.bam & # launch the alignment process, reading from the output end of the FIFO
-filterReads < rawReads.fastq > my_pipe # launch the filtering process, sending stdout to the input end of the FIFO
+# Create a FIFO in the current working directory.
+mkfifo my_pipe
+# Launch the alignment process in the background, reading from the output end of the FIFO.
+alignReads < my_pipe > alignedReads.bam &
+# Launch the filtering process, sending stdout to the input end of the FIFO.
+filterReads < rawReads.fastq > my_pipe
 ```
 
 The above example is equivalent to `filterReads < rawReads.fastq | alignReads > alignedReads.bam` but using a named pipe.
 
+Sometimes people don't know about how great pipes are and write applications that can _only_ read and write from files. FIFOs can be a way to include these applications in your pipeline. For example, the read alignment software Bowtie 2 takes several inputs and produces a SAM output which often needs to be converted to BAM format. The option `-x` is used to specify the reference genome, `-1` specifies the R1 reads when aligning paired-end reads, `-2` specifies the R2 reads, and -S specifies the name of the SAM output file. The samtools package `view` utility run with the `-bS` flags converts SAM input to BAM output.
+
+```
+mkfifo alignedReads.sam
+# Launch the SAM -> BAM conversion process in the background.
+samtools view -bS alignedReads.sam &
+# Launch the read alignment process.
+bowtie2 -x genomes/reference.fasta -1 reads/reads1.fastq -2 reads/reads2.fastq -S alignedReads.sam
+```
+
+This can be used for any number of inputs/outputs to create branching pipelines, and can be combined with `tee` to copy a stream into multiple downstream processes. For example, if you have some sequencing from an infected host and you want to align the reads to both the host and the pathogen references in order to sort them, after some initial read cleaning.
+
+```
+mkfifo align_to_host_R1
+mkfifo align_to_host_R2
+mkfifo align_to_path_R1
+mkfifo align_to_host_R2
+# Start the alignemnt processes.
+bowtie2 -x genomes/host.fasta -1 align_to_host_R1 -2 align_to_host_R2 -S hostAlignedReads.sam &
+bowtie2 -x genomes/path.fasta -1 align_to_path_R1 -2 align_to_path_R2 -S pathAlignedReads.sam &
+# Start the read cleaning processes.
+cleanReads < reads/reads1.fastq | tee align_to_host_R1 > align_to_path_R1 &
+cleanReads < reads/reads2.fastq | tee align_to_host_R2 > align_to_path_R2 &
+```
+
+In the above example you have a total of size processes: a) two cleaning processes for R1 and R2, b) two `tee` processes which copy the output from the cleaning processes and send one copy to each of c) two alignment processes which each take three inputs, one file and two named pipes.
+
 ## Process Management
+
+Now that you are starting multiple processes simultaneously, it is time to cover how to monitor and manage active processes.
+
+`ps` (__p__rocess __s__tatus) displays your currently running processes. By default, `ps` will only show processes running under the current shell session (not process launched from different terminals or ssh sessions). The `-a` option displays all process running under a terminal, but this list might be quite long on shared systems like an HPC cluster, so you may want to include the `-u` option to specify your username and limit the results to only processes you created.
+
+_In Terminal 1:_
+```
+$ sleep 30 &
+[1] 82385
+$ ps
+    PID TTY          TIME CMD
+  81119 pts/1    00:00:00 bash
+  82385 pts/1    00:00:00 sleep
+  82387 pts/1    00:00:00 ps
+```
+
+_In Terminal 2:_
+```
+$ ps
+    PID TTY          TIME CMD
+  80953 pts/0    00:00:00 bash
+  82388 pts/0    00:00:00 ps
+$ ps -a
+    PID TTY          TIME CMD
+   3269 tty2     00:26:20 Xorg
+   3649 tty2     00:00:00 gnome-session-b
+  82385 pts/1    00:00:00 sleep
+  82390 pts/0    00:00:00 ps
+```
+
+Notice that after running `sleep` for 30 seconds in the background with `&`, `bash` printed the __process identifier__ (__PID__) of the sleep process, which matches one of the PIDs listed in the `ps` output.
+
+The `kill` command is used to end a process by it's PID.
+
+```
+$ sleep 30 &
+[1] 82525
+$ kill 82525
+$ ps
+    PID TTY          TIME CMD
+  81119 pts/1    00:00:00 bash
+  82527 pts/1    00:00:00 ps
+```
+
+`top` is a handy utility that displays a live-updating list of the most resource intensive processes currently running on the system, as well as a summary of system resources and their utilization. `top` is the text-based equivalent of the Task Manager in Windows or the Activity Monitor in macOS. There are many hotkeys and functions of `top` that are worth learning, such as pressing `m` to sort by memory utilization, rather than CPU usage, or pressing `k` to enter a PID to `kill`.
+
+
 
 ## Useful Tools
 
