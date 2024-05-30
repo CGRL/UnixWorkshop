@@ -472,7 +472,7 @@ The solution is to use `^X`, `^C`, and `^V` for cut, copy, and paste in terminal
 
 We covered the hardware that file systems run on, and now we will cover the proper usage of UNIX file systems. Most people have an intuitive sense of how file systems work, as we interact with them on a daily basis, but in our experience novice UNIX users waste an inordinate amount of time an lose an unnecessary amount of hair by not understanding file system basics.
 
-I assume you are already familiar with the basic navigational commands to Change Directories (`cd`), LiSt files and directories (`ls`), Print Working Directory (`pwd`), MaKe DIRectory/s (`mkdir`), and ReMove files (`rm`). We already covered the common options to `ls`, `-l` and `-a`, and you are also most likely familiar with using the Recursive option to remove directories (and all their contents), `rm -r`. So we will dive into the heirarchical structure of UNIX file systems.
+I assume you are already familiar with the basic navigational commands to __c__hange __d__irectories (`cd`), __l__i__s__t files and directories (`ls`), __p__rint __w__orking __d__irectory (`pwd`), __m__a__k__e __dir__ectory/s (`mkdir`), and __m__o__v__e (`mv`), __c__o__p__y (`cp`), and __r__e__m__ove files (`rm`). We already covered the common options to `ls`, `-l` and `-a`, and you are also most likely familiar with using the __r__ecursive option to remove directories (and all their contents), `rm -r`. So we will dive into the heirarchical structure of UNIX file systems.
 
 All UNIX systems use a tree-like heirarchical directory structure, and the base of the file system is termed the "root", and is represented by a slash `/`. Additional partitions are _mounted_ to particular directories under the root. The root partition is often separate from `/boot` and `/swap`, which serve special purposes, and sometimes from the users' home directories (`/home`). The `df` (Disk Free) command shows the available free space on each partition, and thus is an easy way to list the currently mounted partitions. The `-h` option stands for "human readable" and will report values in the greatest appropriate binary unit (i.e. K, M, G, T).
 
@@ -778,6 +778,8 @@ In the above example you have a total of size processes: a) two cleaning process
 
 Now that you are starting multiple processes simultaneously, it is time to cover how to monitor and manage active processes.
 
+### Monitoring and killing processes
+
 `ps` (__p__rocess __s__tatus) displays your currently running processes. By default, `ps` will only show processes running under the current shell session (not process launched from different terminals or ssh sessions). The `-a` option displays all process running under a terminal, but this list might be quite long on shared systems like an HPC cluster, so you may want to include the `-u` option to specify your username and limit the results to only processes you created.
 
 _In Terminal 1:_
@@ -821,9 +823,113 @@ $ ps
 
 `top` is a handy utility that displays a live-updating list of the most resource intensive processes currently running on the system, as well as a summary of system resources and their utilization. `top` is the text-based equivalent of the Task Manager in Windows or the Activity Monitor in macOS. There are many hotkeys and functions of `top` that are worth learning, such as pressing `m` to sort by memory utilization, rather than CPU usage, or pressing `k` to enter a PID to `kill`.
 
+### Exit Codes
 
+Whenever a process ends it sends and exit code back up to whatever launched it. These codes are positive integer values with 0 indicating a successful exit, 1 indicating a generic error, and any other value indicating a more specific error type. Some of the exit code values are conventionally used for certain types of errors, but you would generally need to consult the software documentation to determine what a particulare error code means.
+
+When writing scripts or performing other multi-step processes, exit codes allow you to determine if a prior dependent step completed successfully before moving on. The exit code of the last process to complete is stored in the variable `$?`
+
+```
+$ sleep 1
+$ echo $?
+0
+$ sleep 5 &
+[1] 85206
+$ kill 85206
+$ echo $?
+0
+[1]+  Terminated              sleep 5
+$ ls /nonexistant
+ls: cannot access '/nonexistant': No such file or directory
+$ echo $?
+2
+```
+
+Note that the exit code for a process that was killed is still 0 (successful exit).
+
+We have already shown how `&` is used to run processes in the background. You may also encounter the syntactically similar but conceptually different `&&`. `&&` is used between two commands when you only want the one on the right to be run if the one on the left exited successfully (exit code of 0).
+
+```
+$ ls genomes && echo "success!"
+pathogen.fasta  reference.fasta
+success!
+$ ls nonexistant && echo "no success"
+ls: cannot access 'nonexistant': No such file or directory
+```
+
+### Background processes & long jobs
+
+Running processes in the background with `&` not only allows you launch other simultaneous process and constrcut non-linear pipelines, it can also be handy when running long jobs because then you don't have to start a launch a new terminal or wait until the job finishes in order to keep working. Alternatively, you may be tempted to launch your long job in the background on a remote server, then logout, pack up your laptop, and head home at the end of the day. Unfortunately, any processes launch from your terminal session will be closed when you logout.
+
+`nohup` (__no__ __h__ang __up__) allows you to launch processes that keep running after you logout or disconnect. You add `nohup` to the beginning of your command, similar to `sudo`, and necessarily end with `&` otherwise you would have no way of loging out. You also need to redirect your stdout and stderr to files since there will be no terminal to send them to after you logout, but if you forget then `nohup` will redirect this output to "nohup.out" for you. When working on a remote server, it is good practice to __always use `nohup` whenever you run long jobs from the command line in order to protect your job from a disconnect.__
+
+#### Screen
+
+`screen` is a terminal multiplexer that allows you to start and switch between multiple login sessions inside a single terminal window, but you can think of it like harder, better, faster, stronger `nohup`. `screen` has useful applications when working locally, such as being able to save a session and return to it later, but is exceptionally useful when working on a remote system because `screen` sessions are not ended when you disconnect.
+
+`screen -S my_screen_session` starts a screen session with the name "my_screen_session". As soon as the session starts you are dropped into it, and it appears like you have just opened a new terminal.
+
+`C-a d` __detatch__es you from the session, returning you to your original session.
+
+`screen -ls` __l__i__s__ts all currently running `screen` sessions, and `screen kill [ID]` will terminate the session specified by ID.
+
+`screen -r` __reattach__es the specified session by either name or ID. (Pro-tip: you can use tab-completion here too!)
+
+`C-a k` kills the currently attached screen session, after confirming by pressing `y`.
+
+```
+$ screen -S my_screen_session # then detach with C-a d
+[detached from 87114.my_screen_session]
+$ screen -ls
+There are screens on:
+	87114.my_screen_session	(05/29/2024 03:08:17 PM)	(Detached)
+	86750.pts-1.Toren	(05/29/2024 03:01:11 PM)	(Detached)
+2 Sockets in /run/screen/S-cgrl.
+$ screen -r my_screen_session # then kill with C-a k y
+[screen is terminating]
+```
+
+Lastly, I have found `screen` to be useful for remote collaboration when two or more users have access to the same shared account, as you can pass sessions between each other so long as you are both logged in to the same user account.
 
 ## Useful Tools
+
+For examples of these tools we will be working on the _C. elegans_ genome anotation, [available from the NCBI in .gff format](https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/002/985/GCA_000002985.3_WBcel235/GCA_000002985.3_WBcel235_genomic.gff.gz), extracted and renamed to simply "Celegans.gff".
+```
+curl https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/002/985/GCA_000002985.3_WBcel235/GCA_000002985.3_WBcel235_genomic.gff.gz > Celegans.gff.gz
+gunzip Celegans.gff.gz
+```
+
+`head` outputs the __head__er of a file - by default the first 10 lines.
+ - `-n` specifies the number of lines to output. Positive values specify from the beginning of the file, while negative values specify from the end.
+
+`tail` outputs the last 10 lines of the file.
+- `-n` works just the same as in `head`, except values without a sign are assumed to be negative (meaning from the end of the file).
+
+__Example:__ Strip off the 7 header lines of Celegans.gff.  
+```tail -n +8 Celegans.gff > Celegans_noheader.gff```
+
+`sort` we have already seen and it does exactly what it says on the tin.
+ - `-u` (__u__nique) removes duplicate entries.
+ - `-f` ignores case (case insensitive mode)
+ - `-r` (__r__everse) sorts in the opposite order
+ - `-t` specifies a delimiter (i.e. character that separates columns) when sorting tabular data. If not set, white space (spaces and tabs) functions as the delimiter.
+ - `-k` specifies which column to sort by, starting with 1, not 0.
+
+`cut` selects and prints fields (i.e. columns) from tabular text data.
+ - `-f` specifies the fields to select. Can be a sinlge integer, a comma separated list, or a range (e.g. 1-3). Fields start at 1, not 0.
+ - `-d` specifies the delimiter. If not set, cut uses TABs as a delimiter.
+ - `-c` cuts based on character count, rather than using a delimiter.
+
+__Example:__ Sort the annotation by feature type (3rd column) and discard the attributes (9th column). The grep command filters out any lines starting with "#", such as the header and footer.
+```grep -v "^#" Celegans.gff | sort -k 3 | cut -f 1-8 > Celegans_featuresorted.gff```
+
+`sed` (__s__tream __ed__itor)
+
+`tar` 
+
+`find` 
+
+`rename` 
 
 ## Package Managers
 
