@@ -914,18 +914,29 @@ __Example:__ Strip off the 7 header lines of Celegans.gff.
  - `-r` (__r__everse) sorts in the opposite order
  - `-t` specifies a delimiter (i.e. character that separates columns) when sorting tabular data. If not set, white space (spaces and tabs) functions as the delimiter.
  - `-k` specifies which column to sort by, starting with 1, not 0.
+ - `-h` uses __h_uman-readable numeric sort, which is like a numeric sort but can handle binary/SI prefixes like 32G and 14K.
 
 `cut` selects and prints fields (i.e. columns) from tabular text data.
  - `-f` specifies the fields to select. Can be a sinlge integer, a comma separated list, or a range (e.g. 1-3). Fields start at 1, not 0.
  - `-d` specifies the delimiter. If not set, cut uses TABs as a delimiter.
  - `-c` cuts based on character count, rather than using a delimiter.
 
-__Example:__ Sort the annotation by feature type (3rd column) and discard the attributes (9th column). The grep command filters out any lines starting with "#", such as the header and footer.
-```grep -v "^#" Celegans.gff | sort -k 3 | cut -f 1-8 > Celegans_featuresorted.gff```
+__Example:__ Discard the attributes (9th column) then sort by the end position of each feature (5th column). The grep command filters out any lines starting with "#", such as the header and footer.
+```grep -v "^#" Celegans.gff | cut -f 1-8 | sort -hk 5 > Celegans_featureEndSorted.gff```
 
-`sed` (__s__tream __ed__itor)
+`sed` and `awk` are two tools that can be used to dynamically edit or filter data streams. A common use for these tools (especially `sed`) is string substitution, similar to a find-and-replace tool, but both are much more powerful than mere find-and-replace. Both utilize regular expressions (remember these from `grep`?) to identify patterns, and can simultaneously filter, rearrange, or otherwise edit the data. We will not cover these tools for the sake of time, as learning about regular expressions alone could fill a workshop. However, you should know that `sed` is designed primarily for dealing with streams of text data, while `awk` is designed primarily for dealing with tabular data of both text and numbers, and that `awk` is the more powerful of the two, being a complete programming language in it's own right.
 
-`tar` 
+`tar` (__t__ape __ar__chive) is a tooll for collecting many files into a single archive file. You are most likely familiar with `.zip` files, which combine compression and archival into a single step. On Unix systems it is much more common to at least logically separate these two processes, even if they are carried out at the same time. `.tar` denotes a tar archive, while `.gz` denotes a gzip compressed file, and so `.tar.gz` denotes compressed archives.
+ - `-v` (__v__erbose) will list the files as they are added to the archive.
+ - `-x` (e__x__tract) is used when extracting an archive.
+ - `-c` (__c__reate) is used when creating an archive.
+ - `-z` (un__z__ip) will first decompress the archive.
+ - `-f` (__f__ile) denotes the following argument will the the name of the archive file.
+
+__Example:__ Decompress and unpack an archive.
+```tar -zxvf archive.tar.gz```
+__Example:__ Archive and compress some files.
+```tar -zcvf archive.tar.gz file1.txt file2.txt file3.txt. . . ```
 
 `find` 
 
