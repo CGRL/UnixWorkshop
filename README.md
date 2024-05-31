@@ -525,6 +525,8 @@ __Size__ in bytes, unless using the `--human-readable` (`-h`) option, in which c
 
 __Timestamp__ is the date and time the file was last modified. For copies of files, this is generally the date the copy was made, but some tools such as `rsync` will have options like `--times` (`-t`) or `--archive` (`-a`) which preserve the modification time of the original on the copy. `touch` can be used to update the modification time of a file, as well as to create new empty files if the file does not already exist.
 
+__Name__ is self evident, but note that filenames that start with special characters won't appear unless you include the `-a` (__a__ll) option. Noteablly, this means __any file or directory that starts with `.` is a "hidden" file__.
+
 #### Reading Files
 
 `cat` is short for "concatenate". As well as being used to concatenate multiple files together, it can be a quick way to dump the entire contents of a file to the terminal.
@@ -972,38 +974,50 @@ __Example:__ Rename all .fasta files to .fa files.
 
 ## Package Managers
 
-## Advanced Scripting (Logic)
+This tutorial has covered the basics of installing software on Unix systems, but manually installing software can be a lot of work. Package managers are software that installs software for you in an automated way, attempting to deal with system architecture configuration, adding the packages to your $PATH, installing any necessary dependencies, and (sometimes) automatically updating packages to the latest version. The Mac Store and Google Play are both fancy graphical package managers that almost everyone has used.
 
-### For Loops
+First, there is the package manager included with Linux distributions. These typically require super user priveliges because they install software globally for all users. Debian Linux distributions (e.g. Ubuntu) use `apt` (formerly `apt-get`), while Redhat-based Linux distributions (e.g. RHEL, CentOS, Scientific Linux) use `dnf` (formerly `yum`). macOS doesn't come with a command line package manager, but Homebrew can be installed.
 
-### While Loops
+Second, there are package managers specific to different programming languages. These generally do not require super user priveliges because they can be used to install language packages either locally (generally in your $HOME directory). For example, `pip` for Python, `ppm` for Perl, and `npm` for JavaScript. `R` has a built in package manager, and there are several competing package managers for C/C++.
 
-#### Until
+Third, there is `conda`. `conda` is cross-platform and language-agnostic, meaning it isn't tied to your operating system or to a specific programming language, but Python and R have the greatest number of packages available through `conda`. As well as being a package manager, `conda` is an environment manager, meaning it can be used to create "virtual environments". Virtual environments confine software in seperate silos, allowing you to change the suite of software available to you as well as environment configuration by switching virtual environments. This allows you to keep multiple versions of software, or incompatible software all installed on the same system.
 
-### If. . .Else
-
-#### Boolean Operators
+In my experience, `conda` is an unreliable package manager, often failing to handle dependencies correctly or requiring manual intervention to get software installed, and so it is usually my last choice before resorting to manual installation. However, `conda` is a terrific environment manager, and so I have often created virtual environments with `conda` then proceeded to install packages to those environments with `pip`.
 
 ## Networking
 
-__ping__
+Networking could be its own course, but two basic utilities can help you troubleshoot networking issues.
 
-__ipconfig__
+`ip address show` displays varous information about your network connection, such as your IP address. `ip link show` will show your device MAC address, should you need to provide it to IT security to get past a firewall.
+
+`ping` sends a ping (i.e. a small packet of information containing a request for a reply) to an address and times the response. `ping www.google.com` is a good way to tell if you are connected to the internet, and pinging some server you are trying to work with can let you know if you're doing something wrong or if the server is down.
 
 ### SSH
 
-__config__
-__known_hosts__
-__ssh keys__
+`ssh` stands for __s__ecure __sh__ell, and is the encrypted connection protocol most often used to work on remote servers. The basic syntax is `ssh username@hostname` or `ssh username@ipaddress`. Various files related to `ssh` are kept in the hidden directory `$HOME/.ssh`.
 
-### FTP
+`.ssh/known_hosts` contains cryptographic fingerprints of any server you connect to via ssh. Every time you reconnect to that server the fingerprint of the server is checked against the identity stored in `known_hosts`, and if they don't match you will see an error and you won't be able to connect. This is a security feature designed to protect from "man in the middle" attacks, where someone will intercept your traffic headed to the server then attempt to impersonate the server in order to get you to enter your password or other vital information. However, false positives are common because server identities are not preserved across operating system upgrades or reinstalls. If you are expecting an updated identity from the server, you can override this protection by either deleting your `known_hosts` file or removing the offending entry from the file. If you are unsure why the identity changed, however, you should contact your sysadmin.
 
-FTP file browsers
+`.ssh/config` allows you to change the default behavior of `ssh`. One of the most useful features of the `.ssh/config` is assigning your frequently used servers to aliases. Add the following lines (replacing \[variable] values with your own) to your `.ssh/config` file (creating the file if it doesn't exist) to create an alias:
 
-## Common Options
+```
+Host [alias]
+	User [username]
+	HostName [hostname or IP address]
+```
 
--h
--a
--v
--l
--f
+You may also want to add `Port [port]` if the server is using a non-standard port, or `ServerAliveInterval [seconds]` to send a ping to the server every \[seconds] to prevent being logged out due to idleness. Using `ssh` aliases can save a lot of time, keystrokes, and forgotten addresses by turning `ssh username@cgrl.qb3genomics.berkeley.edu:1234` into `ssh cgrl`.
+
+#### SSH keys
+
+SSH keys are cryptographic key pairs that can be used as an alternative to password authentication. There is a public key (`.pub`) which you provide to the remote system, and a private key which you should never share. Both key pairs are typically generated and kept in your `.ssh` directory, so you want to make sure that this directory, and especially any private keys stored there, are not readable by other users on the system.
+
+The Berkeley HPC system, Savio, does not allow use of SSH keys, instead requiring two factor authentication. However, if you use GitHub to collaborate on code or just to back up your code (an you probably should be), GitHub requires you to set up a key pair to make commits directly from your local branch. If you are managing your own or a labs server, see [this handy documentation on how to set up SSH key based authentication](https://www.digitalocean.com/community/tutorials/how-to-configure-ssh-key-based-authentication-on-a-linux-server), or if you use GitHub, see [their step-by-step guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). 
+
+#### SFTP
+
+Despite the "Power of the Command Line" (TM), there are still plenty of tasks for which graphical file browsers and tools are incredibly useful. If you are working a lot on a remote system, you should invest the time to find a graphical file browser that works for you. What you are looking for is an SFTP (Secure File Transfer Protocol, which is FTP using the SSH protocol) client.
+
+If you already use Linux, you're in luck, because the most common file browsers for Linux support SFTP connections right out of the box. Check your menus for an option to connect to a remote server, and you should be able to interact with files on the server in almost exactly the same way you do for local files, including opening them in all your favorite graphical software.
+
+For Windows, WinSCP and FileZilla are both popular clients. For macOS, Cyberduck is the most popular.
