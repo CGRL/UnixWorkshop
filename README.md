@@ -906,6 +906,7 @@ gunzip Celegans.gff.gz
 - `-n` works just the same as in `head`, except values without a sign are assumed to be negative (meaning from the end of the file).
 
 __Example:__ Strip off the 7 header lines of Celegans.gff.  
+
 ```tail -n +8 Celegans.gff > Celegans_noheader.gff```
 
 `sort` we have already seen and it does exactly what it says on the tin.
@@ -922,6 +923,7 @@ __Example:__ Strip off the 7 header lines of Celegans.gff.
  - `-c` cuts based on character count, rather than using a delimiter.
 
 __Example:__ Discard the attributes (9th column) then sort by the end position of each feature (5th column). The grep command filters out any lines starting with "#", such as the header and footer.
+
 ```grep -v "^#" Celegans.gff | cut -f 1-8 | sort -hk 5 > Celegans_featureEndSorted.gff```
 
 `sed` and `awk` are two tools that can be used to dynamically edit or filter data streams. A common use for these tools (especially `sed`) is string substitution, similar to a find-and-replace tool, but both are much more powerful than mere find-and-replace. Both utilize regular expressions (remember these from `grep`?) to identify patterns, and can simultaneously filter, rearrange, or otherwise edit the data. We will not cover these tools for the sake of time, as learning about regular expressions alone could fill a workshop. However, you should know that `sed` is designed primarily for dealing with streams of text data, while `awk` is designed primarily for dealing with tabular data of both text and numbers, and that `awk` is the more powerful of the two, being a complete programming language in it's own right.
@@ -934,13 +936,39 @@ __Example:__ Discard the attributes (9th column) then sort by the end position o
  - `-f` (__f__ile) denotes the following argument will the the name of the archive file.
 
 __Example:__ Decompress and unpack an archive.
+
 ```tar -zxvf archive.tar.gz```
+
 __Example:__ Archive and compress some files.
+
 ```tar -zcvf archive.tar.gz file1.txt file2.txt file3.txt. . . ```
 
-`find` 
+`find` searches a directory and all directories under it for files that match given criteria, then does something with the results.
+ - Criteria:
+   - `-name` searches based on filenames.
+   - `-type` searches based on file type. Note that this is not the same as the file _extension_ (e.g. .txt, .fasta), but is `f` for regular files, `d` for directories, or `l` for symlinks.
+   - `-a` logical AND - criteria on both sides must be true.
+   - `-o` logical OR - at least one criteria on either side must be true.
+   - `!` logical NOT - the following criteria must be false.
+ - Actions:
+   - `-print` prints the path to any file found.
+   - `-exec` executes the provided command for each file found, subtituting `{}` with the given file.
 
-`rename` 
+__Example:__ Search in the genomes directory for any files that start with "Homo" or "Pan" and end with ".fasta", excluding directories, then use `grep` to output the sequence identifiers from each file.
+
+```find ./genomes -name "Homo*.fasta" -o -name "Pan*.fasta" -exec grep "^>" {}``
+
+`rename` uses regular expressions to rename many files at once. Rename is not installed by default on all Unix systems, but it is handy enough for dealing with troves of files from different sources that it warrants mention here.
+ - `-v` (__v__erbose) lists every change that rename makes.
+ - `'s/query/replace/'` substitutes the first instance of "query" with "replace".
+ - `'s/query/replace/N'` substitutes the Nth instance of "query" with "replace".
+ - `'s/query/replace/g'` substitutes all instances of "query" with "replace.
+ - `'s/^query/replace/'` replaces "query" with replace only if the filename starts with "query".
+ - `'s/query$/replace/'` replaces "query" with replace only if the filename ends with "query".
+
+__Example:__ Rename all .fasta files to .fa files.
+
+```rename -v '/.fasta$/.fa/' *.fasta```
 
 ## Package Managers
 
